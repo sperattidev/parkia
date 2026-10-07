@@ -12,6 +12,7 @@ Sistema de estacionamiento medido para municipios y comunas de Argentina: app pa
 | [docs/stack.md](docs/stack.md)                   | Arquitectura, stack, infraestructura y alcance del MVP    |
 | [docs/tarifas.md](docs/tarifas.md)               | Reglas de cálculo de tarifas (referencia para municipios) |
 | [docs/funcionamiento.md](docs/funcionamiento.md) | Cuentas, saldo, estacionamiento y control en la calle     |
+| [docs/despliegue.md](docs/despliegue.md)         | Servidor, deploy, túnel, respaldos y operación            |
 
 ## Estructura
 
