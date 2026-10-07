@@ -16,7 +16,8 @@
     "test:coverage": "vitest run --project unit --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env dist/db/migrar.js",
-    "db:seed": "node --env-file-if-exists=.env dist/db/sembrar.js"
+    "db:seed": "node --env-file-if-exists=.env dist/db/sembrar.js",
+    "db:crear-personal": "node --env-file-if-exists=.env dist/db/crear-personal.js"
   },
   "dependencies": {
     "@fastify/helmet": "^13.1.1",
@@ -27,6 +28,7 @@
     "@nestjs/platform-fastify": "^12.1.2",
     "@nestjs/swagger": "^12.0.2",
     "@nestjs/terminus": "^12.1.0",
+    "@nestjs/throttler": "^6.7.1",
     "@parkia/contracts": "workspace:*",
     "@parkia/domain": "workspace:*",
     "drizzle-orm": "^0.45.3",

@@ -65,6 +65,7 @@ export async function configurarApp(app: NestFastifyApplication): Promise<void> 
       .setTitle('Parkia API')
       .setDescription('API del sistema de estacionamiento medido Parkia')
       .setVersion('0.1.0')
+      .addBearerAuth()
       .build(),
   );
   SwaggerModule.setup('docs', app, documento, { jsonDocumentUrl: 'docs/openapi.json' });

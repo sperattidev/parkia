@@ -5,3 +5,5 @@ import { inject } from 'vitest';
 process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = 'silent';
 process.env.DATABASE_URL = inject('databaseUrl');
+process.env.AUTH_SECRET = 'clave-de-pruebas-de-integracion-0123456789';
+process.env.CORREO_PROVEEDOR = 'consola';

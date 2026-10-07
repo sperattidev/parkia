@@ -87,9 +87,12 @@
 
 ### Autenticación
 
-- **Better Auth** (librería TS, se aloja en nuestra base, sin costo por usuario).
-- Conductores: código por **WhatsApp o SMS** (OTP) o email. Sin contraseñas.
-- Municipio y agentes: usuario + contraseña + 2FA, con roles (`admin_municipio`, `hacienda`, `agente`, `comercio`, `superadmin_parkia`).
+- **Implementación propia** en `apps/api/src/autenticacion` (se descartó Better Auth: su integración con NestJS 12 ESM + Fastify no está madura, y el alcance necesario es chico y auditable).
+- **Conductores:** código de 6 dígitos por **email** (luego WhatsApp), sin contraseñas. Vence en 10 min, máximo 5 intentos, un código nuevo invalida el anterior, máximo 5 códigos cada 15 min por email. Sesión de 30 días.
+- **Personal municipal:** email + contraseña (**scrypt**, parámetros OWASP), sesión de 12 h. Roles por municipio: `admin`, `agente`, `comercio`. Pendiente: 2FA.
+- **Sesiones con token opaco** (256 bits). En la base solo se guarda su **HMAC-SHA256** con `AUTH_SECRET`: una copia de la base no permite usar ni adivinar tokens o códigos.
+- **Defensas:** respuestas idénticas exista o no la cuenta (incluido el tiempo de verificación de contraseña), límite de 5 intentos por minuto por IP en endpoints de credenciales y 120 por minuto en general.
+- **Autorización:** guardia global (todo exige sesión salvo `@Publico()`) y `@RequiereRol(...)` que valida la membresía en el municipio de la ruta.
 
 ### Pagos
 

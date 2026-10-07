@@ -6,11 +6,15 @@ import {
   HealthIndicatorService,
   type HealthCheckResult,
 } from '@nestjs/terminus';
+import { SkipThrottle } from '@nestjs/throttler';
 import { sql } from 'drizzle-orm';
 
+import { Publico } from '../autenticacion/decoradores.js';
 import type { Conexion } from '../db/conexion.js';
 import { CONEXION } from '../db/db.module.js';
 
+@Publico()
+@SkipThrottle()
 @ApiTags('Salud')
 @Controller('salud')
 export class SaludController {

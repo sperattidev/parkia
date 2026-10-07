@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
+import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
+import { GuardiaDeAutenticacion } from './autenticacion/guardia.js';
 import { FiltroDeErrores } from './comun/filtro-de-errores.js';
 import { validarEntorno, type Entorno } from './config/entorno.js';
+import { CorreoModule } from './correo/correo.module.js';
 import { DbModule } from './db/db.module.js';
 import { SaludModule } from './salud/salud.module.js';
 import { ZonasModule } from './zonas/zonas.module.js';
@@ -44,10 +48,19 @@ import { ZonasModule } from './zonas/zonas.module.js';
         },
       }),
     }),
+    // Límite general por IP (en memoria: suficiente con una sola instancia de la API).
+    ThrottlerModule.forRoot({ throttlers: [{ name: 'default', ttl: 60_000, limit: 120 }] }),
     DbModule,
+    CorreoModule,
+    AutenticacionModule,
     SaludModule,
     ZonasModule,
   ],
-  providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],
+  providers: [
+    { provide: APP_FILTER, useClass: FiltroDeErrores },
+    // El orden importa: primero el límite de tasa, después la autenticación.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useExisting: GuardiaDeAutenticacion },
+  ],
 })
 export class AppModule {}

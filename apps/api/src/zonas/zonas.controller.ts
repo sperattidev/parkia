@@ -14,8 +14,10 @@ import {
   type ZonasGeoJson,
 } from '@parkia/contracts';
 
+import { Publico } from '../autenticacion/decoradores.js';
 import { ZonasService } from './zonas.service.js';
 
+@Publico()
 @ApiTags('Zonas')
 @Controller('municipios/:municipio')
 export class ZonasController {

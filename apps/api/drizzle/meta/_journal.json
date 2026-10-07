@@ -15,6 +15,13 @@
       "when": 1791401533137,
       "tag": "0001_municipios_y_zonas",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791402657209,
+      "tag": "0002_identidad_y_acceso",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,16 @@
 export {
+  emailSchema,
+  ingresoConCodigoSchema,
+  ingresoConContrasenaSchema,
+  rolMunicipalSchema,
+  sesionSchema,
+  solicitudDeCodigoSchema,
+  usuarioSchema,
+  type RolMunicipal,
+  type Sesion,
+  type Usuario,
+} from './autenticacion.js';
+export {
   cotizacionSchema,
   cotizacionSolicitudSchema,
   type Cotizacion,
