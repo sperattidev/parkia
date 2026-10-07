@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { GuardiaDeAutenticacion } from './autenticacion/guardia.js';
 import { BilleteraModule } from './billetera/billetera.module.js';
 import { FiltroDeErrores } from './comun/filtro-de-errores.js';
+import { GuardiaDeLimites } from './comun/guardia-de-limites.js';
 import { RelojModule } from './comun/reloj.js';
 import { validarEntorno, type Entorno } from './config/entorno.js';
 import { CorreoModule } from './correo/correo.module.js';
@@ -69,7 +70,7 @@ import { ZonasModule } from './zonas/zonas.module.js';
   providers: [
     { provide: APP_FILTER, useClass: FiltroDeErrores },
     // El orden importa: primero el límite de tasa, después la autenticación.
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: GuardiaDeLimites },
     { provide: APP_GUARD, useExisting: GuardiaDeAutenticacion },
   ],
 })

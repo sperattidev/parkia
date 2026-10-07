@@ -13,6 +13,7 @@ import {
 import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 
+import { ipDelCliente } from '../comun/ip-cliente.js';
 import { AutenticacionService, type DatosDeConexion } from './autenticacion.service.js';
 import { Publico, UsuarioActual } from './decoradores.js';
 import type { UsuarioAutenticado } from './tipos.js';
@@ -21,7 +22,7 @@ import type { UsuarioAutenticado } from './tipos.js';
 const LIMITE_CREDENCIALES = { default: { limit: 5, ttl: 60_000 } };
 
 function datosDeConexion(solicitud: FastifyRequest): DatosDeConexion {
-  return { ip: solicitud.ip, agenteDeUsuario: solicitud.headers['user-agent'] };
+  return { ip: ipDelCliente(solicitud), agenteDeUsuario: solicitud.headers['user-agent'] };
 }
 
 @ApiTags('Autenticación')

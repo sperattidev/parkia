@@ -43,11 +43,13 @@ export {
   type ReglaTarifariaZonaEntrada,
 } from './tarifas.js';
 export {
+  municipioSchema,
   multiPoligonoSchema,
   slugMunicipioSchema,
   ubicacionSchema,
   zonaResumenSchema,
   zonasGeoJsonSchema,
+  type MunicipioPublico,
   type MultiPoligono,
   type Ubicacion,
   type ZonaResumen,

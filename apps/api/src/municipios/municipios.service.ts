@@ -9,6 +9,8 @@ import { municipios } from '../db/esquema.js';
 export interface Municipio {
   readonly id: string;
   readonly slug: string;
+  readonly nombre: string;
+  readonly provincia: string;
   readonly zonaHoraria: string;
 }
 
@@ -19,7 +21,13 @@ export class MunicipiosService {
   /** Municipio activo por su identificador en la URL, o 404. */
   async porSlug(slug: string): Promise<Municipio> {
     const [municipio] = await this.conexion.db
-      .select({ id: municipios.id, slug: municipios.slug, zonaHoraria: municipios.zonaHoraria })
+      .select({
+        id: municipios.id,
+        slug: municipios.slug,
+        nombre: municipios.nombre,
+        provincia: municipios.provincia,
+        zonaHoraria: municipios.zonaHoraria,
+      })
       .from(municipios)
       .where(and(eq(municipios.slug, slug), eq(municipios.activo, true)))
       .limit(1);

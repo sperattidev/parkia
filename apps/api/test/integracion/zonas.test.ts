@@ -76,6 +76,17 @@ describe('API de zonas (integración)', () => {
     });
   });
 
+  it('expone los datos públicos del municipio', async () => {
+    const respuesta = await get('/v1/municipios/firmat');
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json()).toEqual({
+      slug: 'firmat',
+      nombre: 'Firmat',
+      provincia: 'Santa Fe',
+      zonaHoraria: 'America/Argentina/Buenos_Aires',
+    });
+  });
+
   it('responde 404 para un municipio inexistente', async () => {
     const respuesta = await get('/v1/municipios/rosario/zonas');
     expect(respuesta.statusCode).toBe(404);

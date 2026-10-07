@@ -6,6 +6,17 @@ export const slugMunicipioSchema = z
   .max(60)
   .meta({ example: 'firmat' });
 
+export const municipioSchema = z
+  .object({
+    slug: z.string(),
+    nombre: z.string(),
+    provincia: z.string(),
+    zonaHoraria: z.string().meta({ example: 'America/Argentina/Buenos_Aires' }),
+  })
+  .meta({ id: 'Municipio' });
+
+export type MunicipioPublico = z.infer<typeof municipioSchema>;
+
 export const ubicacionSchema = z
   .object({
     lat: z.coerce.number().min(-90).max(90).meta({ example: -33.4598 }),
