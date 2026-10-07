@@ -11,6 +11,16 @@ export {
   type Usuario,
 } from './autenticacion.js';
 export {
+  billeteraSchema,
+  cargaDePruebaSchema,
+  patenteSchema,
+  tipoDeMovimientoSchema,
+  vehiculoNuevoSchema,
+  vehiculoSchema,
+  type Billetera,
+  type Vehiculo,
+} from './billetera.js';
+export {
   cotizacionSchema,
   cotizacionSolicitudSchema,
   type Cotizacion,

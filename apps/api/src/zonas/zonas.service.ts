@@ -14,23 +14,20 @@ import {
   liquidarEstacionamiento,
   type ReglaTarifaria,
 } from '@parkia/domain';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql, type SQL } from 'drizzle-orm';
 
 import { NoEncontrado } from '../comun/errores.js';
 import type { Conexion } from '../db/conexion.js';
 import { CONEXION } from '../db/db.module.js';
-import { municipios, zonas } from '../db/esquema.js';
+import { zonas } from '../db/esquema.js';
+import { MunicipiosService, type Municipio } from '../municipios/municipios.service.js';
 
-interface Municipio {
-  readonly id: string;
-  readonly zonaHoraria: string;
-}
-
-interface FilaZona {
+/** Zona activa con su regla tarifaria completa (incluida la zona horaria del municipio). */
+export interface Zona {
   readonly id: string;
   readonly nombre: string;
   readonly color: string;
-  readonly reglaTarifaria: unknown;
+  readonly regla: ReglaTarifaria;
 }
 
 const columnasZona = {
@@ -42,10 +39,13 @@ const columnasZona = {
 
 @Injectable()
 export class ZonasService {
-  constructor(@Inject(CONEXION) private readonly conexion: Conexion) {}
+  constructor(
+    @Inject(CONEXION) private readonly conexion: Conexion,
+    private readonly municipios: MunicipiosService,
+  ) {}
 
   async listar(slugMunicipio: string, ahora = new Date()): Promise<ZonasGeoJson> {
-    const municipio = await this.municipio(slugMunicipio);
+    const municipio = await this.municipios.porSlug(slugMunicipio);
     const filas = await this.conexion.db
       .select({ ...columnasZona, geometria: sql<string>`ST_AsGeoJSON(${zonas.area}, 6)` })
       .from(zonas)
@@ -55,7 +55,7 @@ export class ZonasService {
     return {
       type: 'FeatureCollection',
       features: filas.map((fila) => {
-        const { id, ...propiedades } = this.resumen(fila, municipio, ahora);
+        const { id, ...propiedades } = this.resumen(this.aZona(fila, municipio), ahora);
         return {
           type: 'Feature',
           id,
@@ -66,86 +66,77 @@ export class ZonasService {
     };
   }
 
-  /** Zona tarifada que contiene la ubicación (incluye el borde). */
   async ubicar(
     slugMunicipio: string,
     ubicacion: Ubicacion,
     ahora = new Date(),
   ): Promise<ZonaResumen> {
-    const municipio = await this.municipio(slugMunicipio);
-    const punto = sql`ST_SetSRID(ST_MakePoint(${ubicacion.lng}, ${ubicacion.lat}), 4326)`;
-    const [fila] = await this.conexion.db
-      .select(columnasZona)
-      .from(zonas)
-      .where(
-        and(
-          eq(zonas.municipioId, municipio.id),
-          eq(zonas.activa, true),
-          sql`ST_Covers(${zonas.area}, ${punto})`,
-        ),
-      )
-      .orderBy(asc(zonas.nombre))
-      .limit(1);
-
-    if (!fila) {
-      throw new NoEncontrado('FUERA_DE_ZONA', 'La ubicación no está dentro de una zona tarifada.');
-    }
-    return this.resumen(fila, municipio, ahora);
+    const municipio = await this.municipios.porSlug(slugMunicipio);
+    return this.resumen(await this.enUbicacion(municipio, ubicacion), ahora);
   }
 
   async cotizar(slugMunicipio: string, solicitud: CotizacionSolicitud): Promise<Cotizacion> {
-    const municipio = await this.municipio(slugMunicipio);
-    const [fila] = await this.conexion.db
-      .select(columnasZona)
-      .from(zonas)
-      .where(
-        and(
-          eq(zonas.id, solicitud.zonaId),
-          eq(zonas.municipioId, municipio.id),
-          eq(zonas.activa, true),
-        ),
-      )
-      .limit(1);
-
-    if (!fila) {
-      throw new NoEncontrado('ZONA_NO_ENCONTRADA', 'La zona no existe en este municipio.');
-    }
-
-    const liquidacion = liquidarEstacionamiento(this.regla(fila, municipio), solicitud);
+    const municipio = await this.municipios.porSlug(slugMunicipio);
+    const zona = await this.porId(municipio, solicitud.zonaId);
+    const liquidacion = liquidarEstacionamiento(zona.regla, solicitud);
     return {
-      zonaId: fila.id,
+      zonaId: zona.id,
       ...liquidacion,
       importeFormateado: formatearPesos(liquidacion.importe),
       jornadas: [...liquidacion.jornadas],
     };
   }
 
-  private async municipio(slug: string): Promise<Municipio> {
-    const [municipio] = await this.conexion.db
-      .select({ id: municipios.id, zonaHoraria: municipios.zonaHoraria })
-      .from(municipios)
-      .where(and(eq(municipios.slug, slug), eq(municipios.activo, true)))
-      .limit(1);
-
-    if (!municipio) {
-      throw new NoEncontrado('MUNICIPIO_NO_ENCONTRADO', `No existe el municipio "${slug}".`);
+  /** Zona activa del municipio, o 404 `ZONA_NO_ENCONTRADA`. */
+  async porId(municipio: Municipio, zonaId: string): Promise<Zona> {
+    const zona = await this.buscar(municipio, eq(zonas.id, zonaId));
+    if (!zona) {
+      throw new NoEncontrado('ZONA_NO_ENCONTRADA', 'La zona no existe en este municipio.');
     }
-    return municipio;
+    return zona;
   }
 
-  private regla(fila: FilaZona, municipio: Municipio): ReglaTarifaria {
-    return {
-      ...reglaTarifariaZonaSchema.parse(fila.reglaTarifaria),
-      zonaHoraria: municipio.zonaHoraria,
-    };
+  /** Zona tarifada que contiene la ubicación (incluye el borde), o 404 `FUERA_DE_ZONA`. */
+  async enUbicacion(municipio: Municipio, ubicacion: Ubicacion): Promise<Zona> {
+    const punto = sql`ST_SetSRID(ST_MakePoint(${ubicacion.lng}, ${ubicacion.lat}), 4326)`;
+    const zona = await this.buscar(municipio, sql`ST_Covers(${zonas.area}, ${punto})`);
+    if (!zona) {
+      throw new NoEncontrado('FUERA_DE_ZONA', 'La ubicación no está dentro de una zona tarifada.');
+    }
+    return zona;
   }
 
-  private resumen(fila: FilaZona, municipio: Municipio, ahora: Date): ZonaResumen {
+  private async buscar(municipio: Municipio, condicion: SQL): Promise<Zona | undefined> {
+    const [fila] = await this.conexion.db
+      .select(columnasZona)
+      .from(zonas)
+      .where(and(eq(zonas.municipioId, municipio.id), eq(zonas.activa, true), condicion))
+      .orderBy(asc(zonas.nombre))
+      .limit(1);
+    return fila && this.aZona(fila, municipio);
+  }
+
+  private aZona(
+    fila: { id: string; nombre: string; color: string; reglaTarifaria: unknown },
+    municipio: Municipio,
+  ): Zona {
     return {
       id: fila.id,
       nombre: fila.nombre,
       color: fila.color,
-      enHorarioDeCobro: estaEnHorarioDeCobro(this.regla(fila, municipio), ahora),
+      regla: {
+        ...reglaTarifariaZonaSchema.parse(fila.reglaTarifaria),
+        zonaHoraria: municipio.zonaHoraria,
+      },
+    };
+  }
+
+  private resumen(zona: Zona, ahora: Date): ZonaResumen {
+    return {
+      id: zona.id,
+      nombre: zona.nombre,
+      color: zona.color,
+      enHorarioDeCobro: estaEnHorarioDeCobro(zona.regla, ahora),
     };
   }
 }

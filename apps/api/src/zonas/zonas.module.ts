@@ -6,5 +6,6 @@ import { ZonasService } from './zonas.service.js';
 @Module({
   controllers: [ZonasController],
   providers: [ZonasService],
+  exports: [ZonasService],
 })
 export class ZonasModule {}

@@ -1,7 +1,9 @@
 import type { ReglaTarifariaZonaEntrada } from '@parkia/contracts';
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
+  check,
   customType,
   index,
   integer,
@@ -142,4 +144,85 @@ export const sesiones = pgTable(
     creadoEn: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (tabla) => [index('sesiones_usuario').on(tabla.usuarioId)],
+);
+
+// ─── Vehículos y billetera ───────────────────────────────────────────────────
+
+export const vehiculos = pgTable(
+  'vehiculos',
+  {
+    id: uuid()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    usuarioId: uuid()
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'cascade' }),
+    /** Normalizada (ver `normalizarPatente`). Una misma patente puede estar en varias cuentas. */
+    patente: text().notNull(),
+    alias: text(),
+    creadoEn: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (tabla) => [uniqueIndex('vehiculos_usuario_patente_unico').on(tabla.usuarioId, tabla.patente)],
+);
+
+/**
+ * Saldo prepago de un conductor en un municipio: el dinero cargado se acredita
+ * en la cuenta de ese municipio y solo paga estacionamiento allí.
+ */
+export const billeteras = pgTable(
+  'billeteras',
+  {
+    id: uuid()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    usuarioId: uuid()
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'restrict' }),
+    municipioId: uuid()
+      .notNull()
+      .references(() => municipios.id, { onDelete: 'restrict' }),
+    /** Centavos. Siempre igual a la suma de sus movimientos. */
+    saldo: bigint({ mode: 'number' }).notNull().default(0),
+    ...auditoria,
+  },
+  (tabla) => [
+    uniqueIndex('billeteras_usuario_municipio_unico').on(tabla.usuarioId, tabla.municipioId),
+    check('billeteras_saldo_no_negativo', sql`${tabla.saldo} >= 0`),
+  ],
+);
+
+export const tipoDeMovimiento = pgEnum('tipo_de_movimiento', [
+  'carga',
+  'consumo',
+  'reintegro',
+  'ajuste',
+]);
+
+/** Libro de movimientos. Solo admite inserciones (lo garantiza un trigger). */
+export const movimientos = pgTable(
+  'movimientos',
+  {
+    id: uuid()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    billeteraId: uuid()
+      .notNull()
+      .references(() => billeteras.id, { onDelete: 'restrict' }),
+    tipo: tipoDeMovimiento().notNull(),
+    /** Centavos con signo: positivo acredita, negativo debita. */
+    importe: bigint({ mode: 'number' }).notNull(),
+    saldoResultante: bigint({ mode: 'number' }).notNull(),
+    /** Origen del movimiento (id de pago, de estacionamiento…). Evita duplicados. */
+    referencia: text().notNull(),
+    descripcion: text().notNull(),
+    /** Quién lo registró, si fue una persona (ajustes, cargas en comercio). */
+    registradoPor: uuid().references(() => usuarios.id, { onDelete: 'restrict' }),
+    creadoEn: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (tabla) => [
+    uniqueIndex('movimientos_tipo_referencia_unico').on(tabla.tipo, tabla.referencia),
+    index('movimientos_billetera_creado').on(tabla.billeteraId, tabla.creadoEn),
+    check('movimientos_importe_no_cero', sql`${tabla.importe} <> 0`),
+    check('movimientos_saldo_no_negativo', sql`${tabla.saldoResultante} >= 0`),
+  ],
 );

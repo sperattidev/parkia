@@ -5,6 +5,9 @@ import * as esquema from './esquema.js';
 
 export type BaseDeDatos = NodePgDatabase<typeof esquema>;
 
+/** Transacción de Drizzle: los servicios que la reciben participan de una operación mayor. */
+export type Transaccion = Parameters<Parameters<BaseDeDatos['transaction']>[0]>[0];
+
 export interface Conexion {
   readonly db: BaseDeDatos;
   readonly pool: pg.Pool;

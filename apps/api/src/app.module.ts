@@ -6,10 +6,12 @@ import { LoggerModule } from 'nestjs-pino';
 
 import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { GuardiaDeAutenticacion } from './autenticacion/guardia.js';
+import { BilleteraModule } from './billetera/billetera.module.js';
 import { FiltroDeErrores } from './comun/filtro-de-errores.js';
 import { validarEntorno, type Entorno } from './config/entorno.js';
 import { CorreoModule } from './correo/correo.module.js';
 import { DbModule } from './db/db.module.js';
+import { MunicipiosModule } from './municipios/municipios.module.js';
 import { SaludModule } from './salud/salud.module.js';
 import { ZonasModule } from './zonas/zonas.module.js';
 
@@ -52,9 +54,11 @@ import { ZonasModule } from './zonas/zonas.module.js';
     ThrottlerModule.forRoot({ throttlers: [{ name: 'default', ttl: 60_000, limit: 120 }] }),
     DbModule,
     CorreoModule,
+    MunicipiosModule,
     AutenticacionModule,
     SaludModule,
     ZonasModule,
+    BilleteraModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: FiltroDeErrores },
