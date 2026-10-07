@@ -31,3 +31,7 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json
 .idea/
+
+# Next.js
+.next/
+next-env.d.ts

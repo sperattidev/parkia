@@ -4,7 +4,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": ["PARKIA_API_URL", "NEXT_PUBLIC_*"]
     },
     "dev": {
       "cache": false,

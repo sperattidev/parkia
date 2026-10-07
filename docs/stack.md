@@ -73,10 +73,14 @@
 
 ### Web
 
-- **Next.js (App Router) + Tailwind + shadcn/ui.**
-- **MapLibre GL + OpenStreetMap** para los mapas. Sin costo por uso, a diferencia de Google Maps.
-- **Serwist** para PWA (offline básico e instalación).
-- Gráficos del tablero: **Recharts**.
+- **Next.js 16 (App Router, Turbopack) + React 19 + Tailwind 4**, componentes propios con tokens de diseño en CSS (modo claro y oscuro).
+- **MapLibre GL 6 + OpenFreeMap** (teselas vectoriales de OpenStreetMap, sin clave ni costo por uso). El worker de MapLibre se copia a `public/vendor` antes de `dev` y `build`.
+- **TanStack Query** para datos en el cliente: el estacionamiento en curso se refresca cada 30 s.
+- **Sesión con cookie `httpOnly` (patrón BFF):** el navegador habla solo con la web (`/api/...`), que agrega el token al llamar a la API. El token nunca está al alcance de JavaScript. Las operaciones que modifican datos exigen el encabezado `x-parkia` (protección CSRF) y la cookie es `SameSite=Lax`.
+- `proxy.ts` (antes _middleware_) redirige al ingreso las secciones personales sin sesión.
+- PWA instalable (manifest e ícono). Pendiente: service worker para uso offline y notificaciones (**Serwist**).
+- `agentRules: false` en `next.config.ts`: Next no genera archivos de instrucciones para asistentes.
+- Gráficos del tablero municipal (próximo): **Recharts**.
 
 ### App Agente
 

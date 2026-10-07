@@ -1,0 +1,69 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens de diseño de Parkia. Los componentes usan solo estos nombres
+ * (bg-superficie, text-tinta, bg-marca…), así el modo oscuro y un cambio de
+ * identidad se resuelven acá.
+ */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-fondo: oklch(0.975 0.004 255);
+  --color-superficie: oklch(1 0 0);
+  --color-superficie-2: oklch(0.955 0.007 255);
+  --color-borde: oklch(0.9 0.01 255);
+  --color-tinta: oklch(0.22 0.03 262);
+  --color-tinta-suave: oklch(0.48 0.025 260);
+
+  --color-marca: oklch(0.52 0.2 262);
+  --color-marca-fuerte: oklch(0.44 0.2 264);
+  --color-marca-suave: oklch(0.94 0.035 262);
+  --color-sobre-marca: oklch(0.99 0 0);
+
+  --color-exito: oklch(0.58 0.15 155);
+  --color-exito-suave: oklch(0.95 0.045 155);
+  --color-alerta: oklch(0.7 0.16 70);
+  --color-alerta-suave: oklch(0.96 0.05 85);
+  --color-peligro: oklch(0.56 0.21 27);
+  --color-peligro-suave: oklch(0.95 0.035 25);
+
+  --radius-tarjeta: 1.25rem;
+  --shadow-flotante: 0 10px 40px -12px oklch(0.22 0.03 262 / 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-fondo: oklch(0.17 0.02 262);
+    --color-superficie: oklch(0.22 0.025 262);
+    --color-superficie-2: oklch(0.27 0.025 262);
+    --color-borde: oklch(0.33 0.025 262);
+    --color-tinta: oklch(0.96 0.005 255);
+    --color-tinta-suave: oklch(0.74 0.02 258);
+    --color-marca: oklch(0.66 0.17 262);
+    --color-marca-fuerte: oklch(0.72 0.15 262);
+    --color-marca-suave: oklch(0.3 0.07 262);
+    --color-exito-suave: oklch(0.3 0.06 155);
+    --color-alerta-suave: oklch(0.32 0.06 75);
+    --color-peligro-suave: oklch(0.3 0.07 25);
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-fondo text-tinta antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-marca;
+  }
+}
+
+/* Controles de MapLibre acordes al tema. */
+.maplibregl-ctrl-group {
+  @apply rounded-xl! border border-borde! bg-superficie! shadow-flotante!;
+}

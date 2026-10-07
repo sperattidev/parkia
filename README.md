@@ -18,6 +18,7 @@ Sistema de estacionamiento medido para municipios y comunas de Argentina: app pa
 ```
 apps/
   api/           API REST (NestJS 12 + Fastify + PostgreSQL/PostGIS)
+  web/           Web del conductor (Next.js 16, PWA): mapa, estacionar, saldo, vehículos
 packages/
   domain/        Reglas de negocio puras: tarifas, horarios de cobro, dinero
   contracts/     Esquemas Zod compartidos entre la API y los clientes
@@ -42,6 +43,8 @@ pnpm --filter @parkia/api db:migrate    # aplica migraciones
 pnpm --filter @parkia/api db:seed       # datos de demo: Firmat · Microcentro
 PARKIA_CONTRASENA=una-clave-de-12+ pnpm --filter @parkia/api db:crear-personal -- --email agente@firmat.gob.ar --municipio firmat --rol agente
 pnpm --filter @parkia/api dev           # API en http://localhost:3000
+cp apps/web/.env.example apps/web/.env.local
+pnpm --filter @parkia/web dev           # web en http://localhost:3001/firmat
 ```
 
 - Documentación interactiva de la API: <http://localhost:3000/docs>
