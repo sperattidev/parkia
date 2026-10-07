@@ -46,7 +46,12 @@ const microcentro: ZonasGeoJson = {
           ],
         ],
       },
-      properties: { nombre: 'Microcentro', color: '#2563EB', enHorarioDeCobro: true },
+      properties: {
+        nombre: 'Microcentro',
+        color: '#2563EB',
+        enHorarioDeCobro: true,
+        tarifa: { precioHora: 100_000, horario: 'Lun a Vie 8 a 20' },
+      },
     },
   ],
 };

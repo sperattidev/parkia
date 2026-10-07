@@ -11,6 +11,7 @@ import {
 import {
   estaEnHorarioDeCobro,
   formatearPesos,
+  resumirHorario,
   liquidarEstacionamiento,
   type ReglaTarifaria,
 } from '@parkia/domain';
@@ -137,6 +138,10 @@ export class ZonasService {
       nombre: zona.nombre,
       color: zona.color,
       enHorarioDeCobro: estaEnHorarioDeCobro(zona.regla, ahora),
+      tarifa: {
+        precioHora: zona.regla.tramos[0]?.precioHora ?? 0,
+        horario: resumirHorario(zona.regla.horario),
+      },
     };
   }
 }

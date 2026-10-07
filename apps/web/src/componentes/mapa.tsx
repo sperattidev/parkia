@@ -1,19 +1,106 @@
 'use client';
 
 import type { ZonasGeoJson } from '@parkia/contracts';
-import type { Map as MapaMapLibre } from 'maplibre-gl';
-import { useEffect, useEffectEvent, useRef } from 'react';
+import type { ExpressionSpecification, Map as MapaMapLibre } from 'maplibre-gl';
+import { useEffect, useEffectEvent, useRef, useSyncExternalStore } from 'react';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { limites } from '@/lib/geo';
 
-const ESTILO =
-  process.env.NEXT_PUBLIC_ESTILO_MAPA ?? 'https://tiles.openfreemap.org/styles/liberty';
+const ESTILOS = {
+  claro: process.env.NEXT_PUBLIC_ESTILO_MAPA ?? 'https://tiles.openfreemap.org/styles/positron',
+  oscuro: process.env.NEXT_PUBLIC_ESTILO_MAPA_OSCURO ?? 'https://tiles.openfreemap.org/styles/dark',
+};
+
+const CONSULTA_OSCURO = '(prefers-color-scheme: dark)';
+const CONSULTA_ESCRITORIO = '(min-width: 1024px)';
+
+function suscribirTema(aviso: () => void) {
+  const consulta = window.matchMedia(CONSULTA_OSCURO);
+  consulta.addEventListener('change', aviso);
+  return () => {
+    consulta.removeEventListener('change', aviso);
+  };
+}
+
+function useTemaOscuro(): boolean {
+  return useSyncExternalStore(
+    suscribirTema,
+    () => window.matchMedia(CONSULTA_OSCURO).matches,
+    () => false,
+  );
+}
+
+/** Espacio que ocupan la hoja inferior (celular) o el panel lateral (escritorio). */
+function margenes() {
+  return window.matchMedia(CONSULTA_ESCRITORIO).matches
+    ? { top: 64, bottom: 64, left: 480, right: 64 }
+    : { top: 96, bottom: 380, left: 32, right: 32 };
+}
 
 export interface Ubicacion {
   readonly lat: number;
   readonly lng: number;
+}
+
+function agregarZonas(mapa: MapaMapLibre, zonas: ZonasGeoJson, oscuro: boolean) {
+  if (mapa.getSource('zonas')) return;
+  // MapLibre solo admite ids numéricos en el estado de las geometrías: se
+  // promueve el uuid desde las propiedades.
+  mapa.addSource('zonas', {
+    type: 'geojson',
+    data: {
+      ...zonas,
+      features: zonas.features.map((zona) => ({
+        ...zona,
+        properties: { ...zona.properties, id: zona.id },
+      })),
+    },
+    promoteId: 'id',
+  });
+  const seleccionada: ExpressionSpecification = [
+    'boolean',
+    ['feature-state', 'seleccionada'],
+    false,
+  ];
+  mapa.addLayer({
+    id: 'zonas-relleno',
+    type: 'fill',
+    source: 'zonas',
+    paint: {
+      'fill-color': ['get', 'color'],
+      'fill-opacity': ['case', seleccionada, oscuro ? 0.32 : 0.2, oscuro ? 0.2 : 0.12],
+    },
+  });
+  mapa.addLayer({
+    id: 'zonas-halo',
+    type: 'line',
+    source: 'zonas',
+    paint: { 'line-color': oscuro ? '#0a1020' : '#ffffff', 'line-width': 6, 'line-opacity': 0.9 },
+  });
+  mapa.addLayer({
+    id: 'zonas-borde',
+    type: 'line',
+    source: 'zonas',
+    paint: { 'line-color': ['get', 'color'], 'line-width': ['case', seleccionada, 3, 2.25] },
+  });
+  mapa.addLayer({
+    id: 'zonas-nombre',
+    type: 'symbol',
+    source: 'zonas',
+    layout: {
+      'text-field': ['upcase', ['get', 'nombre']],
+      'text-size': 12,
+      'text-letter-spacing': 0.12,
+      'text-font': ['Noto Sans Bold'],
+    },
+    paint: {
+      'text-color': ['get', 'color'],
+      'text-halo-color': oscuro ? '#0a1020' : '#ffffff',
+      'text-halo-width': 2,
+    },
+  });
 }
 
 /**
@@ -33,7 +120,16 @@ export function Mapa({
 }) {
   const contenedorRef = useRef<HTMLDivElement>(null);
   const mapaRef = useRef<MapaMapLibre | null>(null);
+  const oscuro = useTemaOscuro();
   const notificarUbicacion = useEffectEvent((ubicacion: Ubicacion) => alUbicar?.(ubicacion));
+  const marcarSeleccion = useEffectEvent((mapa: MapaMapLibre) => {
+    for (const zona of zonas.features) {
+      mapa.setFeatureState(
+        { source: 'zonas', id: zona.id },
+        { seleccionada: zona.id === zonaSeleccionada },
+      );
+    }
+  });
 
   useEffect(() => {
     let cancelado = false;
@@ -43,16 +139,18 @@ export function Mapa({
       if (cancelado || !contenedorRef.current) return;
       // Worker copiado a public/vendor (ver scripts/copiar-worker-mapa.mjs).
       maplibre.setWorkerUrl(`/vendor/maplibre-gl-worker.mjs?v=${maplibre.getVersion()}`);
+
       const recuadro = limites(zonas);
       const instancia = new Map({
         container: contenedorRef.current,
-        style: ESTILO,
+        style: oscuro ? ESTILOS.oscuro : ESTILOS.claro,
         ...(recuadro
-          ? { bounds: recuadro, fitBoundsOptions: { padding: 48, maxZoom: 16 } }
+          ? { bounds: recuadro, fitBoundsOptions: { padding: margenes(), maxZoom: 16.5 } }
           : { center: [-61.4875, -33.46], zoom: 14 }),
         attributionControl: { compact: true },
         dragRotate: false,
         pitchWithRotate: false,
+        touchPitch: false,
       });
       mapaRef.current = instancia;
 
@@ -67,56 +165,13 @@ export function Mapa({
         notificarUbicacion({ lat: posicion.coords.latitude, lng: posicion.coords.longitude });
       });
 
-      instancia.on('load', () => {
-        // MapLibre solo admite ids numéricos en el estado de las geometrías: se
-        // promueve el uuid desde las propiedades.
-        instancia.addSource('zonas', {
-          type: 'geojson',
-          data: {
-            ...zonas,
-            features: zonas.features.map((zona) => ({
-              ...zona,
-              properties: { ...zona.properties, id: zona.id },
-            })),
-          },
-          promoteId: 'id',
-        });
-        instancia.addLayer({
-          id: 'zonas-relleno',
-          type: 'fill',
-          source: 'zonas',
-          paint: {
-            'fill-color': ['get', 'color'],
-            'fill-opacity': [
-              'case',
-              ['boolean', ['feature-state', 'seleccionada'], false],
-              0.28,
-              0.16,
-            ],
-          },
-        });
-        instancia.addLayer({
-          id: 'zonas-borde',
-          type: 'line',
-          source: 'zonas',
-          paint: { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-dasharray': [2, 1] },
-        });
-        instancia.addLayer({
-          id: 'zonas-nombre',
-          type: 'symbol',
-          source: 'zonas',
-          layout: {
-            'text-field': ['get', 'nombre'],
-            'text-size': 14,
-            'text-font': ['Noto Sans Bold'],
-          },
-          paint: {
-            'text-color': ['get', 'color'],
-            'text-halo-color': '#ffffff',
-            'text-halo-width': 2,
-          },
-        });
-        // Pide la ubicación al cargar: es lo que el conductor necesita para estacionar.
+      // Se ejecuta en cada carga de estilo (también al cambiar de tema).
+      instancia.on('style.load', () => {
+        agregarZonas(instancia, zonas, oscuro);
+        marcarSeleccion(instancia);
+      });
+      instancia.once('load', () => {
+        // Pide la ubicación al abrir: es lo que el conductor necesita para estacionar.
         geolocalizar.trigger();
       });
     });
@@ -126,18 +181,12 @@ export function Mapa({
       mapaRef.current?.remove();
       mapaRef.current = null;
     };
-  }, [zonas]);
+  }, [zonas, oscuro]);
 
   useEffect(() => {
     const instancia = mapaRef.current;
-    if (!instancia?.isStyleLoaded()) return;
-    for (const zona of zonas.features) {
-      instancia.setFeatureState(
-        { source: 'zonas', id: zona.id },
-        { seleccionada: zona.id === zonaSeleccionada },
-      );
-    }
-  }, [zonas, zonaSeleccionada]);
+    if (instancia?.isStyleLoaded()) marcarSeleccion(instancia);
+  }, [zonaSeleccionada]);
 
   return (
     <div

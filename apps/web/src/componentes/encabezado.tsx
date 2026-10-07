@@ -12,12 +12,16 @@ export function EncabezadoDePagina({
   accion?: ReactNode;
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 pt-[env(safe-area-inset-top)]">
+    <header className="flex items-end justify-between gap-3 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center gap-3">
-        <Isotipo className="size-9" />
+        <Isotipo className="lg:hidden" />
         <div>
-          <h1 className="text-2xl font-bold">{titulo}</h1>
-          {subtitulo && <p className="text-sm text-tinta-suave">{subtitulo}</p>}
+          {subtitulo && (
+            <p className="text-xs font-bold tracking-wider text-tinta-tenue uppercase">
+              {subtitulo}
+            </p>
+          )}
+          <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight">{titulo}</h1>
         </div>
       </div>
       {accion}
@@ -26,5 +30,9 @@ export function EncabezadoDePagina({
 }
 
 export function ContenedorDePagina({ children }: { children: ReactNode }) {
-  return <main className="mx-auto max-w-lg space-y-5 px-4 py-6">{children}</main>;
+  return (
+    <main className="mx-auto w-full max-w-2xl animate-aparecer space-y-6 px-4 pt-6 pb-10 lg:pt-10">
+      {children}
+    </main>
+  );
 }

@@ -1,12 +1,13 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Mail, MailCheck } from 'lucide-react';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { CampoCodigo } from '@/componentes/campo-codigo';
 import { Boton, CampoDeTexto, Tarjeta } from '@/componentes/ui';
 import { mensajeDeError, pedir } from '@/lib/cliente';
 
@@ -25,7 +26,8 @@ export function FormularioDeIngreso({ volver }: { volver: string }) {
   });
 
   const ingresar = useMutation({
-    mutationFn: () => pedir('/api/sesion', { metodo: 'POST', cuerpo: { email, codigo } }),
+    mutationFn: (valor: string) =>
+      pedir('/api/sesion', { metodo: 'POST', cuerpo: { email, codigo: valor } }),
     onSuccess: () => {
       router.replace(volver as Route);
       router.refresh();
@@ -38,17 +40,17 @@ export function FormularioDeIngreso({ volver }: { volver: string }) {
 
   if (paso === 'email') {
     return (
-      <Tarjeta>
+      <Tarjeta className="animate-subir p-6 shadow-flotante sm:p-8">
         <form
-          className="space-y-5"
+          className="space-y-6"
           onSubmit={(evento) => {
             evento.preventDefault();
             enviarCodigo.mutate();
           }}
         >
           <div>
-            <h1 className="text-2xl font-bold">Ingresá a Parkia</h1>
-            <p className="mt-1 text-tinta-suave">
+            <h2 className="text-2xl font-extrabold tracking-tight">Ingresá a Parkia</h2>
+            <p className="mt-1.5 text-tinta-suave">
               Te enviamos un código a tu email. Sin contraseñas.
             </p>
           </div>
@@ -66,56 +68,57 @@ export function FormularioDeIngreso({ volver }: { volver: string }) {
               setEmail(evento.target.value);
             }}
           />
-          <Boton type="submit" className="w-full" cargando={enviarCodigo.isPending}>
+          <Boton type="submit" tamano="grande" className="w-full" cargando={enviarCodigo.isPending}>
             <Mail className="size-5" aria-hidden /> Enviarme el código
           </Boton>
+          <p className="text-center text-xs leading-relaxed text-tinta-tenue">
+            Si es tu primera vez, la cuenta se crea sola al ingresar.
+          </p>
         </form>
       </Tarjeta>
     );
   }
 
   return (
-    <Tarjeta>
+    <Tarjeta className="animate-subir p-6 shadow-flotante sm:p-8">
       <form
-        className="space-y-5"
+        className="space-y-6"
         onSubmit={(evento) => {
           evento.preventDefault();
-          ingresar.mutate();
+          ingresar.mutate(codigo);
         }}
       >
         <div>
-          <h1 className="text-2xl font-bold">Revisá tu email</h1>
-          <p className="mt-1 text-tinta-suave">
-            Escribí el código de 6 dígitos que enviamos a <strong>{email}</strong>.
+          <span className="mb-4 grid size-12 place-items-center rounded-2xl bg-marca-suave text-marca">
+            <MailCheck className="size-6" aria-hidden />
+          </span>
+          <h2 className="text-2xl font-extrabold tracking-tight">Revisá tu email</h2>
+          <p className="mt-1.5 text-tinta-suave">
+            Escribí el código de 6 dígitos que enviamos a{' '}
+            <strong className="text-tinta">{email}</strong>.
           </p>
         </div>
-        <CampoDeTexto
-          etiqueta="Código"
-          name="codigo"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="\d{6}"
-          maxLength={6}
-          required
-          autoFocus
-          className="text-center font-mono text-2xl tracking-[0.5em]"
-          value={codigo}
-          onChange={(evento) => {
-            setCodigo(evento.target.value.replace(/\D/g, ''));
+        <CampoCodigo
+          valor={codigo}
+          alCambiar={setCodigo}
+          deshabilitado={ingresar.isPending}
+          alCompletar={(valor) => {
+            ingresar.mutate(valor);
           }}
         />
         <Boton
           type="submit"
+          tamano="grande"
           className="w-full"
           disabled={codigo.length !== 6}
           cargando={ingresar.isPending}
         >
           Ingresar
         </Boton>
-        <div className="flex justify-between text-sm">
+        <div className="flex items-center justify-between text-sm">
           <button
             type="button"
-            className="inline-flex items-center gap-1 font-medium text-tinta-suave"
+            className="inline-flex items-center gap-1 font-semibold text-tinta-suave hover:text-tinta"
             onClick={() => {
               setPaso('email');
               setCodigo('');
@@ -125,7 +128,7 @@ export function FormularioDeIngreso({ volver }: { volver: string }) {
           </button>
           <button
             type="button"
-            className="font-semibold text-marca disabled:opacity-50"
+            className="font-bold text-marca disabled:opacity-50"
             disabled={enviarCodigo.isPending}
             onClick={() => {
               enviarCodigo.mutate(undefined, {

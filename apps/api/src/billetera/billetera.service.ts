@@ -142,7 +142,7 @@ export class BilleteraService {
         tipo: 'carga',
         importe,
         referencia: `prueba:${randomUUID()}`,
-        descripcion: 'Carga de prueba (sin pago real)',
+        descripcion: 'Carga de prueba',
       });
     });
     await this.notificarAcreditacion(usuarioId, municipio);

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { duracion, hora, horaConDia, pesos } from '@/lib/formato';
+import {
+  agruparPorDia,
+  duracion,
+  hora,
+  horaConDia,
+  pesos,
+  pesosRedondos,
+  tituloDeDia,
+} from '@/lib/formato';
 
 const ar = (fechaHora: string) => new Date(`${fechaHora}-03:00`);
 
@@ -24,5 +32,32 @@ describe('formato', () => {
 
   it('formatea pesos desde centavos', () => {
     expect(pesos(137_500)).toMatch(/^\$\s1\.375,00$/);
+  });
+});
+
+describe('agrupación por día', () => {
+  const ahora = ar('2026-10-07T19:00');
+
+  it('titula hoy, ayer y fechas anteriores', () => {
+    expect(tituloDeDia(ar('2026-10-07T08:00').toISOString(), ahora)).toBe('Hoy');
+    expect(tituloDeDia(ar('2026-10-06T23:59').toISOString(), ahora)).toBe('Ayer');
+    expect(tituloDeDia(ar('2026-10-05T10:00').toISOString(), ahora)).toBe('Lunes 5 de octubre');
+  });
+
+  it('agrupa conservando el orden', () => {
+    const items = ['2026-10-07T18:00', '2026-10-07T09:00', '2026-10-06T12:00'].map((f) => ({
+      f: ar(f).toISOString(),
+    }));
+    expect(
+      agruparPorDia(items, (i) => i.f, ahora).map((g) => [g.titulo, g.elementos.length]),
+    ).toEqual([
+      ['Hoy', 2],
+      ['Ayer', 1],
+    ]);
+  });
+
+  it('omite los centavos cuando son cero', () => {
+    expect(pesosRedondos(100_000)).toMatch(/^\$\s1\.000$/);
+    expect(pesosRedondos(41_250)).toMatch(/^\$\s412,50$/);
   });
 });

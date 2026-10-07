@@ -57,3 +57,47 @@ export function pesos(centavos: number): string {
     centavos / 100,
   );
 }
+
+/** Encabezado de día para listas: `Hoy`, `Ayer` o `lunes 5 de octubre`. */
+export function tituloDeDia(
+  iso: string,
+  ahora: Date,
+  zonaHoraria = ZONA_HORARIA_POR_DEFECTO,
+): string {
+  const dia = diaLocal(new Date(iso), zonaHoraria);
+  if (dia === diaLocal(ahora, zonaHoraria)) return 'Hoy';
+  if (dia === diaLocal(new Date(ahora.getTime() - 24 * 60 * 60_000), zonaHoraria)) return 'Ayer';
+  const texto = new Intl.DateTimeFormat('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: zonaHoraria,
+  }).format(new Date(iso));
+  return texto.charAt(0).toUpperCase() + texto.slice(1).replace(',', '');
+}
+
+/** Agrupa elementos por día local, conservando el orden recibido. */
+export function agruparPorDia<T>(
+  elementos: readonly T[],
+  fecha: (elemento: T) => string,
+  ahora: Date,
+  zonaHoraria = ZONA_HORARIA_POR_DEFECTO,
+): { titulo: string; elementos: T[] }[] {
+  const grupos: { titulo: string; elementos: T[] }[] = [];
+  for (const elemento of elementos) {
+    const titulo = tituloDeDia(fecha(elemento), ahora, zonaHoraria);
+    const ultimo = grupos.at(-1);
+    if (ultimo?.titulo === titulo) ultimo.elementos.push(elemento);
+    else grupos.push({ titulo, elementos: [elemento] });
+  }
+  return grupos;
+}
+
+/** Pesos sin centavos cuando son cero: `$ 1.000` en lugar de `$ 1.000,00`. */
+export function pesosRedondos(centavos: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: centavos % 100 === 0 ? 0 : 2,
+  }).format(centavos / 100);
+}

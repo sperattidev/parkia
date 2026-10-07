@@ -10,6 +10,7 @@ export {
 
 export { estaEnHorarioDeCobro } from './tarifas/horario.js';
 export { vencimientoAlIniciar } from './tarifas/inicio.js';
+export { resumirHorario } from './tarifas/resumen.js';
 export {
   DURACION_MAXIMA_MINUTOS,
   calcularVencimiento,

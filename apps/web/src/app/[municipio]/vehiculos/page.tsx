@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Vehículos' };
 export default function Vehiculos() {
   return (
     <ContenedorDePagina>
-      <EncabezadoDePagina titulo="Vehículos" subtitulo="Tus patentes, en todos los municipios" />
+      <EncabezadoDePagina titulo="Vehículos" subtitulo="Mi cuenta" />
       <PantallaVehiculos />
     </ContenedorDePagina>
   );

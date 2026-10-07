@@ -1,50 +1,90 @@
 @import 'tailwindcss';
 
 /*
- * Tokens de diseño de Parkia. Los componentes usan solo estos nombres
- * (bg-superficie, text-tinta, bg-marca…), así el modo oscuro y un cambio de
+ * Sistema de diseño de Parkia. Los componentes usan solo estos tokens
+ * (bg-superficie, text-tinta, bg-marca…): el modo oscuro y cualquier ajuste de
  * identidad se resuelven acá.
  */
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
-  --color-fondo: oklch(0.975 0.004 255);
-  --color-superficie: oklch(1 0 0);
-  --color-superficie-2: oklch(0.955 0.007 255);
-  --color-borde: oklch(0.9 0.01 255);
-  --color-tinta: oklch(0.22 0.03 262);
-  --color-tinta-suave: oklch(0.48 0.025 260);
+  --color-fondo: #f4f6fb;
+  --color-superficie: #ffffff;
+  --color-superficie-2: #eef2f8;
+  --color-borde: #e1e7f0;
+  --color-borde-fuerte: #cbd4e1;
+  --color-tinta: #0d1729;
+  --color-tinta-suave: #56657d;
+  --color-tinta-tenue: #8a97ab;
 
-  --color-marca: oklch(0.52 0.2 262);
-  --color-marca-fuerte: oklch(0.44 0.2 264);
-  --color-marca-suave: oklch(0.94 0.035 262);
-  --color-sobre-marca: oklch(0.99 0 0);
+  --color-marca: #2754e6;
+  --color-marca-fuerte: #1b3fc0;
+  --color-marca-suave: #e9efff;
+  --color-marca-profunda: #0f2a7a;
+  --color-sobre-marca: #ffffff;
 
-  --color-exito: oklch(0.58 0.15 155);
-  --color-exito-suave: oklch(0.95 0.045 155);
-  --color-alerta: oklch(0.7 0.16 70);
-  --color-alerta-suave: oklch(0.96 0.05 85);
-  --color-peligro: oklch(0.56 0.21 27);
-  --color-peligro-suave: oklch(0.95 0.035 25);
+  --color-exito: #0e9f6e;
+  --color-exito-suave: #e3f8ef;
+  --color-alerta: #f59e0b;
+  --color-alerta-suave: #fff5e0;
+  --color-peligro: #e02d3c;
+  --color-peligro-suave: #fdecee;
 
-  --radius-tarjeta: 1.25rem;
-  --shadow-flotante: 0 10px 40px -12px oklch(0.22 0.03 262 / 0.35);
+  --radius-tarjeta: 1.5rem;
+  --radius-control: 0.875rem;
+
+  --shadow-suave: 0 1px 2px rgb(13 23 41 / 0.04), 0 1px 3px rgb(13 23 41 / 0.06);
+  --shadow-tarjeta: 0 1px 2px rgb(13 23 41 / 0.04), 0 4px 16px -4px rgb(13 23 41 / 0.08);
+  --shadow-flotante: 0 2px 6px rgb(13 23 41 / 0.06), 0 18px 48px -12px rgb(13 23 41 / 0.28);
+  --shadow-marca: 0 8px 24px -8px rgb(39 84 230 / 0.55);
+
+  --animate-aparecer: aparecer 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-subir: subir 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-latido: latido 2.2s ease-in-out infinite;
+
+  @keyframes aparecer {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+  @keyframes subir {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+  @keyframes latido {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-fondo: oklch(0.17 0.02 262);
-    --color-superficie: oklch(0.22 0.025 262);
-    --color-superficie-2: oklch(0.27 0.025 262);
-    --color-borde: oklch(0.33 0.025 262);
-    --color-tinta: oklch(0.96 0.005 255);
-    --color-tinta-suave: oklch(0.74 0.02 258);
-    --color-marca: oklch(0.66 0.17 262);
-    --color-marca-fuerte: oklch(0.72 0.15 262);
-    --color-marca-suave: oklch(0.3 0.07 262);
-    --color-exito-suave: oklch(0.3 0.06 155);
-    --color-alerta-suave: oklch(0.32 0.06 75);
-    --color-peligro-suave: oklch(0.3 0.07 25);
+    --color-fondo: #0a1020;
+    --color-superficie: #121a2e;
+    --color-superficie-2: #1a2440;
+    --color-borde: #243150;
+    --color-borde-fuerte: #33416a;
+    --color-tinta: #eef2fb;
+    --color-tinta-suave: #a3b0c8;
+    --color-tinta-tenue: #6f7d98;
+    --color-marca: #5b82ff;
+    --color-marca-fuerte: #7c9bff;
+    --color-marca-suave: #1b2a55;
+    --color-exito: #34d399;
+    --color-exito-suave: #0f3328;
+    --color-alerta-suave: #3a2a0c;
+    --color-peligro: #ff5c6a;
+    --color-peligro-suave: #3d1219;
+    --shadow-tarjeta: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+    --shadow-flotante: 0 2px 8px rgb(0 0 0 / 0.35), 0 24px 60px -12px rgb(0 0 0 / 0.7);
   }
 }
 
@@ -56,14 +96,51 @@
 
   body {
     @apply bg-fondo text-tinta antialiased;
+    font-feature-settings: 'cv11', 'ss01';
   }
 
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-marca;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      transition-duration: 1ms !important;
+    }
+  }
 }
 
-/* Controles de MapLibre acordes al tema. */
+@utility cifras {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Controles de MapLibre acordes al sistema de diseño. */
 .maplibregl-ctrl-group {
-  @apply rounded-xl! border border-borde! bg-superficie! shadow-flotante!;
+  @apply overflow-hidden rounded-control! border-0! bg-superficie! shadow-tarjeta!;
+}
+.maplibregl-ctrl-group button {
+  @apply size-10!;
+}
+.maplibregl-ctrl-group button + button {
+  @apply border-borde!;
+}
+.maplibregl-ctrl-attrib {
+  @apply rounded-full! bg-superficie/80! text-[10px]! text-tinta-tenue! backdrop-blur;
+}
+@media (prefers-color-scheme: dark) {
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+    filter: invert(1);
+  }
+}
+
+/* Desplazamiento táctil sin barra visible (filas horizontales de tarjetas). */
+@utility sin-barra {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

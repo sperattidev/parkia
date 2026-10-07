@@ -43,6 +43,10 @@ export const zonaResumenSchema = z
     nombre: z.string(),
     color: z.string().meta({ example: '#2563EB' }),
     enHorarioDeCobro: z.boolean(),
+    tarifa: z.object({
+      precioHora: z.int().meta({ description: 'Centavos por hora del primer tramo' }),
+      horario: z.string().meta({ example: 'Lun a Vie 8 a 20 · Sáb 8 a 13' }),
+    }),
   })
   .meta({ id: 'ZonaResumen' });
 

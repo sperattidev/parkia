@@ -1,18 +1,81 @@
 'use client';
 
 import type { MunicipioPublico, ZonasGeoJson } from '@parkia/contracts';
-import { LogIn } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import type { Route } from 'next';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
+import { Isotipo } from '@/componentes/marca';
 import { Mapa, type Ubicacion } from '@/componentes/mapa';
-import { Cargando, Tarjeta } from '@/componentes/ui';
+import { Esqueleto } from '@/componentes/ui';
 import { zonaEnUbicacion } from '@/lib/geo';
-import { useEstacionamientoActivo } from '@/lib/hooks';
+import { useBilletera, useEstacionamientoActivo } from '@/lib/hooks';
 
-import { TarjetaEnCurso } from './tarjeta-en-curso';
-import { TarjetaNueva } from './tarjeta-nueva';
+import { HojaEnCurso } from './hoja-en-curso';
+import { HojaNueva } from './hoja-nueva';
+import { HojaSinSesion } from './hoja-sin-sesion';
+
+/** Contenedor de la hoja: inferior en el celular, panel lateral en escritorio. */
+function Hoja({ children }: { children: ReactNode }) {
+  return (
+    <aside className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex max-h-full flex-col justify-end lg:inset-y-5 lg:right-auto lg:left-5 lg:w-[26rem] lg:justify-start">
+      <div className="pointer-events-auto max-h-[calc(100%-5rem)] animate-subir overflow-y-auto rounded-t-[1.75rem] bg-superficie shadow-flotante lg:max-h-full lg:rounded-tarjeta">
+        <div className="sticky top-0 flex justify-center bg-superficie pt-2.5 pb-1 lg:hidden">
+          <span className="h-1.5 w-10 rounded-full bg-borde-fuerte" aria-hidden />
+        </div>
+        <div className="px-5 pt-2 pb-5 lg:p-6">{children}</div>
+      </div>
+    </aside>
+  );
+}
+
+function BarraFlotante({
+  municipio,
+  haySesion,
+}: {
+  municipio: MunicipioPublico;
+  haySesion: boolean;
+}) {
+  const billetera = useBilletera(municipio.slug, haySesion);
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3 pr-16 lg:hidden">
+      <div className="pointer-events-auto flex items-center gap-2.5 rounded-full bg-superficie/95 py-1.5 pr-4 pl-1.5 shadow-tarjeta backdrop-blur">
+        <Isotipo className="size-8" />
+        <div className="leading-tight">
+          <p className="text-sm font-extrabold">{municipio.nombre}</p>
+          <p className="text-[0.65rem] font-semibold whitespace-nowrap text-tinta-tenue">
+            Estacionamiento medido
+          </p>
+        </div>
+      </div>
+      {haySesion && (
+        <Link
+          href={`/${municipio.slug}/saldo` as Route}
+          className="pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-superficie/95 px-4 text-sm font-bold shadow-tarjeta backdrop-blur"
+        >
+          <Wallet className="size-4 text-marca" aria-hidden />
+          {billetera.data ? (
+            <span className="cifras">{billetera.data.saldoFormateado.replace(',00', '')}</span>
+          ) : (
+            <Esqueleto className="h-4 w-14" />
+          )}
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function HojaCargando() {
+  return (
+    <div className="space-y-4" aria-busy>
+      <Esqueleto className="h-4 w-24" />
+      <Esqueleto className="h-7 w-48" />
+      <Esqueleto className="h-14 w-full" />
+      <Esqueleto className="h-14 w-full rounded-control" />
+    </div>
+  );
+}
 
 export function PantallaEstacionar({
   municipio,
@@ -33,7 +96,7 @@ export function PantallaEstacionar({
   const zonaActual = zonaDetectada?.id ?? zonaElegida;
 
   return (
-    <div className="relative h-[calc(100dvh-4rem-env(safe-area-inset-bottom))]">
+    <div className="relative h-full overflow-hidden">
       {/* MapLibre fuerza position: relative en su contenedor: el posicionamiento va afuera. */}
       <div className="absolute inset-0">
         <Mapa
@@ -44,42 +107,26 @@ export function PantallaEstacionar({
         />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3">
-        <div className="pointer-events-auto mx-auto max-w-lg shadow-flotante">
-          {!haySesion ? (
-            <Tarjeta className="space-y-4">
-              <div>
-                <p className="text-sm text-tinta-suave">{municipio.nombre}</p>
-                <h1 className="text-xl font-bold">Estacioná desde el celular</h1>
-                <p className="mt-1 text-tinta-suave">
-                  Pagás solo el tiempo que usás y te avisamos antes de que se termine el saldo.
-                </p>
-              </div>
-              <Link
-                href={`/ingresar?volver=/${municipio.slug}` as Route}
-                className="flex h-12 items-center justify-center gap-2 rounded-xl bg-marca font-semibold text-sobre-marca hover:bg-marca-fuerte"
-              >
-                <LogIn className="size-5" aria-hidden /> Ingresar para estacionar
-              </Link>
-            </Tarjeta>
-          ) : activo.isPending ? (
-            <Tarjeta>
-              <Cargando />
-            </Tarjeta>
-          ) : activo.data ? (
-            <TarjetaEnCurso municipio={municipio} estacionamiento={activo.data} />
-          ) : (
-            <TarjetaNueva
-              municipio={municipio}
-              zonas={zonas}
-              zonaId={zonaActual}
-              alElegirZona={setZonaElegida}
-              detectada={Boolean(zonaDetectada)}
-              fueraDeZona={Boolean(ubicacion) && !zonaDetectada}
-            />
-          )}
-        </div>
-      </div>
+      <BarraFlotante municipio={municipio} haySesion={haySesion} />
+
+      <Hoja>
+        {!haySesion ? (
+          <HojaSinSesion municipio={municipio} zonas={zonas} />
+        ) : activo.isPending ? (
+          <HojaCargando />
+        ) : activo.data ? (
+          <HojaEnCurso municipio={municipio} estacionamiento={activo.data} />
+        ) : (
+          <HojaNueva
+            municipio={municipio}
+            zonas={zonas}
+            zonaId={zonaActual}
+            alElegirZona={setZonaElegida}
+            detectada={Boolean(zonaDetectada)}
+            fueraDeZona={Boolean(ubicacion) && !zonaDetectada}
+          />
+        )}
+      </Hoja>
     </div>
   );
 }
