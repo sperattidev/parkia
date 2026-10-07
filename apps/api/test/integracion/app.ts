@@ -3,10 +3,33 @@ import { Test } from '@nestjs/testing';
 
 import { AppModule } from '../../src/app.module.js';
 import { AutenticacionService } from '../../src/autenticacion/autenticacion.service.js';
+import { Reloj } from '../../src/comun/reloj.js';
 import { configurarApp } from '../../src/configurar-app.js';
 import { Correo, type MensajeDeCorreo } from '../../src/correo/correo.js';
 import type { Conexion } from '../../src/db/conexion.js';
 import { CONEXION } from '../../src/db/db.module.js';
+
+/** Reloj controlable: los tests fijan y avanzan la hora. */
+export class RelojDePrueba extends Reloj {
+  private actual: Date;
+
+  constructor(inicial: Date) {
+    super();
+    this.actual = inicial;
+  }
+
+  ahora(): Date {
+    return new Date(this.actual);
+  }
+
+  fijar(instante: Date): void {
+    this.actual = instante;
+  }
+
+  avanzar(minutos: number): void {
+    this.actual = new Date(this.actual.getTime() + minutos * 60_000);
+  }
+}
 
 /** Captura los emails en lugar de enviarlos. */
 export class CorreoEnMemoria extends Correo {
@@ -34,12 +57,13 @@ export interface AppDePrueba {
 }
 
 /** Levanta la aplicación real (mismo módulo y misma configuración que producción). */
-export async function crearAppDePrueba(): Promise<AppDePrueba> {
+export async function crearAppDePrueba(opciones: { reloj?: Reloj } = {}): Promise<AppDePrueba> {
   const correo = new CorreoEnMemoria();
-  const modulo = await Test.createTestingModule({ imports: [AppModule] })
+  let constructor = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(Correo)
-    .useValue(correo)
-    .compile();
+    .useValue(correo);
+  if (opciones.reloj) constructor = constructor.overrideProvider(Reloj).useValue(opciones.reloj);
+  const modulo = await constructor.compile();
   const app = modulo.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
   await configurarApp(app);
   await app.init();

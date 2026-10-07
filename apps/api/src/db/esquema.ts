@@ -226,3 +226,99 @@ export const movimientos = pgTable(
     check('movimientos_saldo_no_negativo', sql`${tabla.saldoResultante} >= 0`),
   ],
 );
+
+// ─── Estacionamientos y control ──────────────────────────────────────────────
+
+const punto = customType<{ data: string; driverData: string }>({
+  dataType: () => 'geometry(Point, 4326)',
+});
+
+export const estadoDeEstacionamiento = pgEnum('estado_de_estacionamiento', [
+  'activo',
+  'finalizado',
+]);
+
+export const estacionamientos = pgTable(
+  'estacionamientos',
+  {
+    id: uuid()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    municipioId: uuid()
+      .notNull()
+      .references(() => municipios.id, { onDelete: 'restrict' }),
+    zonaId: uuid()
+      .notNull()
+      .references(() => zonas.id, { onDelete: 'restrict' }),
+    usuarioId: uuid()
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'restrict' }),
+    patente: text().notNull(),
+    /**
+     * Copia de la regla vigente al iniciar (con zona horaria): si el municipio
+     * cambia la tarifa durante la estadía, se cobra lo que regía al empezar.
+     */
+    reglaAplicada: jsonb().notNull(),
+    inicio: timestamp({ withTimezone: true }).notNull(),
+    /** Hasta cuándo cubre el saldo. Se extiende si el conductor carga más saldo. */
+    venceEn: timestamp({ withTimezone: true }).notNull(),
+    fin: timestamp({ withTimezone: true }),
+    /** Centavos cobrados al finalizar. */
+    importe: bigint({ mode: 'number' }),
+    estado: estadoDeEstacionamiento().notNull().default('activo'),
+    ...auditoria,
+  },
+  (tabla) => [
+    // Una patente no puede tener dos estacionamientos en curso en el mismo municipio.
+    uniqueIndex('estacionamientos_patente_activa_unica')
+      .on(tabla.municipioId, tabla.patente)
+      .where(sql`${tabla.estado} = 'activo'`),
+    // El saldo de una billetera respalda un solo estacionamiento a la vez.
+    uniqueIndex('estacionamientos_usuario_activo_unico')
+      .on(tabla.usuarioId, tabla.municipioId)
+      .where(sql`${tabla.estado} = 'activo'`),
+    index('estacionamientos_activos_por_vencimiento')
+      .on(tabla.venceEn)
+      .where(sql`${tabla.estado} = 'activo'`),
+    index('estacionamientos_usuario_inicio').on(tabla.usuarioId, tabla.inicio),
+    check(
+      'estacionamientos_finalizado_completo',
+      sql`${tabla.estado} = 'activo' OR (${tabla.fin} IS NOT NULL AND ${tabla.importe} IS NOT NULL)`,
+    ),
+  ],
+);
+
+export const resultadoDeControl = pgEnum('resultado_de_control', [
+  'habilitado',
+  'fuera_de_horario',
+  'sin_estacionamiento',
+  'vencido',
+  'otra_zona',
+  'fuera_de_zona',
+]);
+
+/** Registro de cada verificación hecha por un agente (auditoría y base para actas). */
+export const controles = pgTable(
+  'controles',
+  {
+    id: uuid()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    municipioId: uuid()
+      .notNull()
+      .references(() => municipios.id, { onDelete: 'restrict' }),
+    agenteId: uuid()
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'restrict' }),
+    patente: text().notNull(),
+    zonaId: uuid().references(() => zonas.id, { onDelete: 'restrict' }),
+    estacionamientoId: uuid().references(() => estacionamientos.id, { onDelete: 'restrict' }),
+    ubicacion: punto().notNull(),
+    resultado: resultadoDeControl().notNull(),
+    creadoEn: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (tabla) => [
+    index('controles_municipio_creado').on(tabla.municipioId, tabla.creadoEn),
+    index('controles_patente').on(tabla.patente),
+  ],
+);

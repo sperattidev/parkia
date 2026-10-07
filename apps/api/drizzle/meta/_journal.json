@@ -36,6 +36,13 @@
       "when": 1791402862418,
       "tag": "0004_movimientos_inmutables",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791403138924,
+      "tag": "0005_estacionamientos_y_controles",
+      "breakpoints": true
     }
   ]
 }

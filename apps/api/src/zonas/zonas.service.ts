@@ -17,6 +17,7 @@ import {
 import { and, asc, eq, sql, type SQL } from 'drizzle-orm';
 
 import { NoEncontrado } from '../comun/errores.js';
+import { Reloj } from '../comun/reloj.js';
 import type { Conexion } from '../db/conexion.js';
 import { CONEXION } from '../db/db.module.js';
 import { zonas } from '../db/esquema.js';
@@ -42,9 +43,11 @@ export class ZonasService {
   constructor(
     @Inject(CONEXION) private readonly conexion: Conexion,
     private readonly municipios: MunicipiosService,
+    private readonly reloj: Reloj,
   ) {}
 
-  async listar(slugMunicipio: string, ahora = new Date()): Promise<ZonasGeoJson> {
+  async listar(slugMunicipio: string): Promise<ZonasGeoJson> {
+    const ahora = this.reloj.ahora();
     const municipio = await this.municipios.porSlug(slugMunicipio);
     const filas = await this.conexion.db
       .select({ ...columnasZona, geometria: sql<string>`ST_AsGeoJSON(${zonas.area}, 6)` })
@@ -66,11 +69,8 @@ export class ZonasService {
     };
   }
 
-  async ubicar(
-    slugMunicipio: string,
-    ubicacion: Ubicacion,
-    ahora = new Date(),
-  ): Promise<ZonaResumen> {
+  async ubicar(slugMunicipio: string, ubicacion: Ubicacion): Promise<ZonaResumen> {
+    const ahora = this.reloj.ahora();
     const municipio = await this.municipios.porSlug(slugMunicipio);
     return this.resumen(await this.enUbicacion(municipio, ubicacion), ahora);
   }

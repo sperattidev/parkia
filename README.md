@@ -6,11 +6,12 @@ Sistema de estacionamiento medido para municipios y comunas de Argentina: app pa
 
 ## Documentación
 
-| Documento                          | Contenido                                                 |
-| ---------------------------------- | --------------------------------------------------------- |
-| [docs/mercado.md](docs/mercado.md) | Mercado, competencia, modelo de negocio y precios         |
-| [docs/stack.md](docs/stack.md)     | Arquitectura, stack, infraestructura y alcance del MVP    |
-| [docs/tarifas.md](docs/tarifas.md) | Reglas de cálculo de tarifas (referencia para municipios) |
+| Documento                                        | Contenido                                                 |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| [docs/mercado.md](docs/mercado.md)               | Mercado, competencia, modelo de negocio y precios         |
+| [docs/stack.md](docs/stack.md)                   | Arquitectura, stack, infraestructura y alcance del MVP    |
+| [docs/tarifas.md](docs/tarifas.md)               | Reglas de cálculo de tarifas (referencia para municipios) |
+| [docs/funcionamiento.md](docs/funcionamiento.md) | Cuentas, saldo, estacionamiento y control en la calle     |
 
 ## Estructura
 
@@ -39,12 +40,14 @@ cp apps/api/.env.example apps/api/.env  # configuración de desarrollo
 pnpm build
 pnpm --filter @parkia/api db:migrate    # aplica migraciones
 pnpm --filter @parkia/api db:seed       # datos de demo: Firmat · Microcentro
+PARKIA_CONTRASENA=una-clave-de-12+ pnpm --filter @parkia/api db:crear-personal -- --email agente@firmat.gob.ar --municipio firmat --rol agente
 pnpm --filter @parkia/api dev           # API en http://localhost:3000
 ```
 
 - Documentación interactiva de la API: <http://localhost:3000/docs>
 - Especificación OpenAPI: <http://localhost:3000/docs/openapi.json>
 - Salud: <http://localhost:3000/salud>
+- En desarrollo los códigos de acceso por email se muestran en el log de la API.
 
 ## Comandos
 

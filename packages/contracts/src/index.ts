@@ -27,6 +27,16 @@ export {
   type CotizacionSolicitud,
 } from './cotizaciones.js';
 export {
+  controlSchema,
+  estacionamientoSchema,
+  inicioDeEstacionamientoSchema,
+  resultadoDeControlSchema,
+  solicitudDeControlSchema,
+  type Control,
+  type Estacionamiento,
+  type ResultadoDeControl,
+} from './estacionamientos.js';
+export {
   centavosSchema,
   reglaTarifariaZonaSchema,
   type ReglaTarifariaZona,

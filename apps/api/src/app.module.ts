@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
@@ -8,9 +9,11 @@ import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { GuardiaDeAutenticacion } from './autenticacion/guardia.js';
 import { BilleteraModule } from './billetera/billetera.module.js';
 import { FiltroDeErrores } from './comun/filtro-de-errores.js';
+import { RelojModule } from './comun/reloj.js';
 import { validarEntorno, type Entorno } from './config/entorno.js';
 import { CorreoModule } from './correo/correo.module.js';
 import { DbModule } from './db/db.module.js';
+import { EstacionamientosModule } from './estacionamientos/estacionamientos.module.js';
 import { MunicipiosModule } from './municipios/municipios.module.js';
 import { SaludModule } from './salud/salud.module.js';
 import { ZonasModule } from './zonas/zonas.module.js';
@@ -52,6 +55,8 @@ import { ZonasModule } from './zonas/zonas.module.js';
     }),
     // Límite general por IP (en memoria: suficiente con una sola instancia de la API).
     ThrottlerModule.forRoot({ throttlers: [{ name: 'default', ttl: 60_000, limit: 120 }] }),
+    ScheduleModule.forRoot(),
+    RelojModule,
     DbModule,
     CorreoModule,
     MunicipiosModule,
@@ -59,6 +64,7 @@ import { ZonasModule } from './zonas/zonas.module.js';
     SaludModule,
     ZonasModule,
     BilleteraModule,
+    EstacionamientosModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: FiltroDeErrores },

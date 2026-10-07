@@ -48,7 +48,10 @@ const argumentosSchema = z.object({
 });
 
 if (import.meta.main) {
+  // pnpm reenvía el separador `--` literal: se descarta para aceptar ambas formas.
+  const argumentos = process.argv.slice(2);
   const { values } = parseArgs({
+    args: argumentos[0] === '--' ? argumentos.slice(1) : argumentos,
     options: {
       email: { type: 'string' },
       municipio: { type: 'string' },
