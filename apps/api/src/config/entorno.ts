@@ -3,6 +3,11 @@ import { z } from 'zod';
 const entornoSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    /**
+     * Entorno de negocio, independiente del técnico: `demo` corre con la misma
+     * configuración que producción pero admite cargas de prueba para mostrar el sistema.
+     */
+    PARKIA_ENTORNO: z.enum(['desarrollo', 'demo', 'produccion']).default('desarrollo'),
     PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
@@ -25,7 +30,7 @@ const entornoSchema = z
     RESEND_API_KEY: z.string().optional(),
   })
   .superRefine((entorno, ctx) => {
-    if (entorno.NODE_ENV === 'production' && entorno.CORREO_PROVEEDOR === 'consola') {
+    if (entorno.PARKIA_ENTORNO === 'produccion' && entorno.CORREO_PROVEEDOR === 'consola') {
       ctx.addIssue({
         code: 'custom',
         path: ['CORREO_PROVEEDOR'],
@@ -42,6 +47,10 @@ const entornoSchema = z
   });
 
 export type Entorno = z.infer<typeof entornoSchema>;
+
+/** Las cargas sin pago real nunca se habilitan en producción. */
+export const admiteCargasDePrueba = (entorno: Pick<Entorno, 'PARKIA_ENTORNO'>): boolean =>
+  entorno.PARKIA_ENTORNO !== 'produccion';
 
 /**
  * Valida las variables de entorno al arrancar. Si falta o sobra algo crítico,

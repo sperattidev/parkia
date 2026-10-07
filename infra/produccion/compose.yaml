@@ -1,0 +1,115 @@
+# Parkia en la VPS. Aislado de los demás proyectos del servidor: red propia,
+# sin puertos publicados (todo entra por Cloudflare Tunnel) y límites de recursos.
+#
+#   docker compose --env-file /opt/parkia/.env -f compose.yaml up -d --wait
+name: parkia
+
+x-comun: &comun
+  restart: unless-stopped
+  labels:
+    com.parkia.project: parkia
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: '5' }
+
+services:
+  postgres:
+    <<: *comun
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_USER: parkia
+      POSTGRES_DB: parkia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definir en .env}
+    volumes:
+      - postgres-datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U parkia -d parkia']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits: { cpus: '2', memory: 2g }
+
+  # Copias diarias, semanales y mensuales en /opt/parkia/respaldos.
+  respaldos:
+    <<: *comun
+    image: prodrigestivill/postgres-backup-local:17
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: parkia
+      POSTGRES_USER: parkia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_EXTRA_OPTS: '--format=custom --compress=9'
+      SCHEDULE: '@daily'
+      BACKUP_KEEP_DAYS: '7'
+      BACKUP_KEEP_WEEKS: '4'
+      BACKUP_KEEP_MONTHS: '6'
+      TZ: America/Argentina/Buenos_Aires
+    volumes:
+      - /opt/parkia/respaldos:/backups
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256m }
+
+  # Se ejecuta una vez en cada deploy, antes de levantar la API.
+  migraciones:
+    image: parkia-api:${PARKIA_VERSION:?definir PARKIA_VERSION}
+    command: ['node', 'dist/db/migrar.js']
+    restart: 'no'
+    labels:
+      com.parkia.project: parkia
+    environment: &entorno-api
+      NODE_ENV: production
+      PARKIA_ENTORNO: ${PARKIA_ENTORNO:-demo}
+      LOG_LEVEL: info
+      DATABASE_URL: postgres://parkia:${POSTGRES_PASSWORD}@postgres:5432/parkia
+      AUTH_SECRET: ${AUTH_SECRET:?definir en .env}
+      CORREO_PROVEEDOR: ${CORREO_PROVEEDOR:-consola}
+      CORREO_REMITENTE: ${CORREO_REMITENTE:-Parkia <no-responder@parkia.net.ar>}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      CORS_ORIGINS: ''
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    <<: *comun
+    image: parkia-api:${PARKIA_VERSION}
+    environment: *entorno-api
+    depends_on:
+      migraciones: { condition: service_completed_successfully }
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 768m }
+
+  web:
+    <<: *comun
+    image: parkia-web:${PARKIA_VERSION}
+    environment:
+      PARKIA_API_URL: http://api:3000
+      PARKIA_ENTORNO: ${PARKIA_ENTORNO:-demo}
+    depends_on:
+      api: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 768m }
+
+  # Túnel saliente hacia Cloudflare: app.parkia.net.ar → web, api.parkia.net.ar → api.
+  cloudflared:
+    <<: *comun
+    image: cloudflare/cloudflared:2026.10.0
+    command: ['tunnel', '--no-autoupdate', 'run']
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?definir en .env}
+    depends_on:
+      web: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256m }
+
+volumes:
+  postgres-datos:
+    labels:
+      com.parkia.project: parkia

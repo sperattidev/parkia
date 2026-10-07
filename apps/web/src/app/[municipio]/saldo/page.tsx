@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { ContenedorDePagina, EncabezadoDePagina } from '@/componentes/encabezado';
+import { admiteCargasDePrueba } from '@/lib/servidor/entorno';
 import { municipioPorSlug } from '@/lib/servidor/municipios';
 
 import { PantallaSaldo } from './pantalla-saldo';
@@ -15,10 +16,7 @@ export default async function Saldo({ params }: PageProps<'/[municipio]/saldo'>)
   return (
     <ContenedorDePagina>
       <EncabezadoDePagina titulo="Saldo" subtitulo={municipio.nombre} />
-      <PantallaSaldo
-        municipio={municipio}
-        cargasDePrueba={process.env.PARKIA_CARGAS_DE_PRUEBA === 'true'}
-      />
+      <PantallaSaldo municipio={municipio} cargasDePrueba={admiteCargasDePrueba()} />
     </ContenedorDePagina>
   );
 }

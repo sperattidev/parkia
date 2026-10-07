@@ -1,0 +1,15 @@
+# Contexto de build: solo el código fuente necesario.
+.git
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+**/public/vendor
+docs
+infra
+compose.yaml

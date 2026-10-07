@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { validarEntorno } from '../../src/config/entorno.js';
+import { admiteCargasDePrueba, validarEntorno } from '../../src/config/entorno.js';
 
 const minimo = {
   DATABASE_URL: 'postgres://u:p@localhost:5432/parkia',
@@ -11,6 +11,7 @@ describe('validarEntorno', () => {
   it('aplica valores por defecto', () => {
     expect(validarEntorno(minimo)).toEqual({
       NODE_ENV: 'development',
+      PARKIA_ENTORNO: 'desarrollo',
       PORT: 3000,
       LOG_LEVEL: 'info',
       DATABASE_URL: minimo.DATABASE_URL,
@@ -50,7 +51,14 @@ describe('validarEntorno', () => {
   });
 
   it('en producción exige un proveedor de correo real', () => {
-    expect(() => validarEntorno({ ...minimo, NODE_ENV: 'production' })).toThrow(/CORREO_PROVEEDOR/);
+    expect(() => validarEntorno({ ...minimo, PARKIA_ENTORNO: 'produccion' })).toThrow(
+      /CORREO_PROVEEDOR/,
+    );
+    // La demo corre como producción técnica pero puede mostrar los códigos en el log.
+    expect(
+      validarEntorno({ ...minimo, NODE_ENV: 'production', PARKIA_ENTORNO: 'demo' })
+        .CORREO_PROVEEDOR,
+    ).toBe('consola');
   });
 
   it('con Resend exige la API key', () => {
@@ -61,5 +69,13 @@ describe('validarEntorno', () => {
       validarEntorno({ ...minimo, CORREO_PROVEEDOR: 'resend', RESEND_API_KEY: 're_123' })
         .CORREO_PROVEEDOR,
     ).toBe('resend');
+  });
+});
+
+describe('admiteCargasDePrueba', () => {
+  it('solo las prohíbe en producción', () => {
+    expect(admiteCargasDePrueba({ PARKIA_ENTORNO: 'desarrollo' })).toBe(true);
+    expect(admiteCargasDePrueba({ PARKIA_ENTORNO: 'demo' })).toBe(true);
+    expect(admiteCargasDePrueba({ PARKIA_ENTORNO: 'produccion' })).toBe(false);
   });
 });

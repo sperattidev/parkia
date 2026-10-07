@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
@@ -5,6 +7,8 @@ const nextConfig: NextConfig = {
   agentRules: false,
   // Servidor autocontenido para la imagen Docker de producción.
   output: 'standalone',
+  // Monorepo: el rastreo de dependencias del build standalone parte de la raíz.
+  outputFileTracingRoot: fileURLToPath(new URL('../..', import.meta.url)),
   poweredByHeader: false,
   reactStrictMode: true,
   typedRoutes: true,
