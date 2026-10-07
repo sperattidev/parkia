@@ -1,8 +1,8 @@
 {
-  "name": "@parkia/domain",
+  "name": "@parkia/contracts",
   "version": "0.1.0",
   "private": true,
-  "description": "Reglas de negocio puras de Parkia: tarifas, horarios de cobro y dinero",
+  "description": "Esquemas Zod compartidos entre la API y los clientes de Parkia",
   "license": "UNLICENSED",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -22,11 +22,11 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@date-fns/tz": "^1.5.0"
+    "@parkia/domain": "workspace:*",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^5.0.3",

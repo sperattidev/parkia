@@ -1,0 +1,27 @@
+# Servicios para desarrollo local. Uso: `docker compose up -d`
+name: parkia-dev
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: parkia
+      POSTGRES_PASSWORD: parkia
+      POSTGRES_DB: parkia
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - postgres-datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U parkia -d parkia']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    labels:
+      com.parkia.project: parkia
+
+volumes:
+  postgres-datos:
+    labels:
+      com.parkia.project: parkia

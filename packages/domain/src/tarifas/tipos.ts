@@ -27,7 +27,7 @@ export interface FranjaSemanal extends Franja {
 export interface DiaEspecial {
   readonly fecha: FechaLocal;
   readonly franjas: readonly Franja[];
-  readonly motivo?: string;
+  readonly motivo?: string | undefined;
 }
 
 /**
@@ -49,7 +49,7 @@ export interface ReglaTarifaria {
   /** Zona horaria IANA del municipio, por ejemplo `America/Argentina/Buenos_Aires`. */
   readonly zonaHoraria: string;
   readonly horario: readonly FranjaSemanal[];
-  readonly diasEspeciales?: readonly DiaEspecial[];
+  readonly diasEspeciales?: readonly DiaEspecial[] | undefined;
   /** Unidad de cobro en minutos: el tiempo se redondea hacia arriba a esta fracción. */
   readonly fraccionMinutos: number;
   /** Tiempo mínimo facturado por jornada (múltiplo de la fracción). */
@@ -57,7 +57,7 @@ export interface ReglaTarifaria {
   /** Si el tiempo cobrable de la jornada no supera este valor, no se cobra. */
   readonly toleranciaMinutos: number;
   readonly tramos: readonly Tramo[];
-  readonly topePorJornada?: Centavos;
+  readonly topePorJornada?: Centavos | undefined;
 }
 
 export interface PeriodoEstacionamiento {

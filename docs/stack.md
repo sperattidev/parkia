@@ -36,15 +36,13 @@
 - Estructura:
   ```
   apps/
-    api/        NestJS
+    api/        NestJS (incluye src/db: esquema Drizzle, migraciones y semillas)
     web/        Next.js: conductor (PWA), gestión, transparente, comercio
     agente/     Expo (React Native)
   packages/
     domain/     reglas de negocio puras (cálculo de tarifas, feriados, horarios)
     contracts/  esquemas Zod compartidos (DTOs, validaciones)
-    db/         esquema Drizzle + migraciones
     ui/         componentes compartidos (shadcn/ui)
-    config/     eslint, tsconfig, prettier
   docs/
   ```
 
@@ -57,6 +55,21 @@
 - **Drizzle ORM**: SQL explícito, buen soporte de PostGIS y RLS, y migraciones versionadas.
 - **pg-boss** para colas y tareas programadas (vencimientos, avisos "te quedan 10 minutos", conciliación). Usa Postgres: no hace falta Redis en el MVP.
 - **Zod** para validar todo lo que entra y sale (en `packages/contracts`).
+
+#### Decisiones de implementación (oct 2026)
+
+| Tema                 | Decisión                                                                                        | Motivo                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Framework            | **NestJS 12 + Fastify**, proyecto **ESM**                                                       | Versión actual; el ecosistema (swagger, terminus, config, nestjs-pino) ya la soporta |
+| Validación y OpenAPI | `StandardSchemaValidationPipe` + `@Body({ schema })` con Zod                                    | Un mismo esquema valida y documenta: sin DTOs duplicados                             |
+| Errores              | Cuerpo uniforme `{ statusCode, codigo, mensaje, detalles? }`; errores de dominio → 422          | Códigos estables para los clientes; nunca se filtran detalles internos               |
+| TypeScript           | **6.0** (el que fija NestJS 12)                                                                 | TS 7 se evaluará cuando lo soporten NestJS y typescript-eslint                       |
+| Build de librerías   | **tsdown**, solo ESM                                                                            | Sucesor de tsup (que no es compatible con TS 6)                                      |
+| Tests                | **Vitest** con transformador **oxc** (metadata de decoradores)                                  | Sin binarios nativos de SWC, que fallaban en Windows                                 |
+| Integración          | **Testcontainers** con `postgis/postgis:17-3.5`                                                 | Tests contra la misma base que producción, efímera por corrida                       |
+| Configuración        | Variables solo desde el entorno del proceso, validadas con Zod al arrancar                      | Nada de `.env` implícitos: lo que corre es lo que se configuró                       |
+| Esquema de datos     | Dentro de `apps/api/src/db` (como en Sperway)                                                   | Menos paquetes que mantener; se extrae si otra app lo necesita                       |
+| Multi-tenant         | Hoy: filtro por `municipio_id` en cada consulta. **Pendiente: RLS** al incorporar autenticación | RLS necesita el contexto del usuario autenticado                                     |
 
 ### Web
 

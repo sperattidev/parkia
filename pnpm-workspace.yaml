@@ -2,6 +2,14 @@ packages:
   - apps/*
   - packages/*
 
-# Solo estas dependencias pueden ejecutar scripts de instalación.
+# Solo las dependencias habilitadas aquí pueden ejecutar scripts de instalación.
 allowBuilds:
   esbuild: true
+  # Lo arrastran @nestjs/cli y tsup; Parkia compila con tsc y oxc, no con SWC.
+  '@swc/core': false
+  # Telemetría: deshabilitada.
+  '@scarf/scarf': false
+  # Compilaciones nativas opcionales de testcontainers (ssh2): no se usan.
+  cpu-features: false
+  ssh2: false
+  protobufjs: false

@@ -15,36 +15,57 @@ Sistema de estacionamiento medido para municipios y comunas de Argentina: app pa
 ## Estructura
 
 ```
-apps/            Aplicaciones (API, web, app de agentes) — próximamente
+apps/
+  api/           API REST (NestJS 12 + Fastify + PostgreSQL/PostGIS)
 packages/
   domain/        Reglas de negocio puras: tarifas, horarios de cobro, dinero
+  contracts/     Esquemas Zod compartidos entre la API y los clientes
 docs/            Documentación del producto y la arquitectura
+compose.yaml     Servicios para desarrollo local (PostGIS)
 ```
 
 ## Requisitos
 
 - Node.js 24 (ver `.nvmrc`)
 - pnpm 12 (`npm i -g pnpm@12`)
-- Docker Desktop (para la base de datos local, cuando se incorpore la API)
+- Docker Desktop
+
+## Puesta en marcha
+
+```bash
+pnpm install
+pnpm db:up                              # PostGIS local en el puerto 5433
+cp apps/api/.env.example apps/api/.env  # configuración de desarrollo
+pnpm build
+pnpm --filter @parkia/api db:migrate    # aplica migraciones
+pnpm --filter @parkia/api db:seed       # datos de demo: Firmat · Microcentro
+pnpm --filter @parkia/api dev           # API en http://localhost:3000
+```
+
+- Documentación interactiva de la API: <http://localhost:3000/docs>
+- Especificación OpenAPI: <http://localhost:3000/docs/openapi.json>
+- Salud: <http://localhost:3000/salud>
 
 ## Comandos
 
 ```bash
-pnpm install          # instala dependencias
-pnpm test             # tests de todos los paquetes
-pnpm test:coverage    # tests con cobertura (mínimo 95 % en domain)
-pnpm lint             # ESLint con reglas estrictas de TypeScript
-pnpm typecheck        # verificación de tipos
-pnpm format           # formatea con Prettier
-pnpm check            # todo lo anterior, como en CI
-pnpm build            # compila los paquetes
+pnpm test              # tests unitarios de todos los paquetes
+pnpm test:integracion  # tests de la API contra PostGIS efímero (requiere Docker)
+pnpm test:coverage     # tests con cobertura (mínimo 95 % en domain)
+pnpm lint              # ESLint con reglas estrictas de TypeScript
+pnpm typecheck         # verificación de tipos
+pnpm format            # formatea con Prettier
+pnpm check             # formato + lint + tipos + tests, como en CI
+pnpm build             # compila todo
+pnpm db:down           # detiene la base local
 ```
 
 ## Convenciones
 
-- **TypeScript estricto** en todo el monorepo.
+- **TypeScript estricto** en todo el monorepo, **solo ESM**.
 - **Dinero siempre en centavos enteros** (`Centavos`), nunca en punto flotante.
 - **Lenguaje del dominio en español** (zona, franja, jornada, liquidación) para hablar el mismo idioma que el municipio y las ordenanzas.
+- **Errores de la API** con cuerpo uniforme `{ statusCode, codigo, mensaje, detalles? }` y códigos estables.
 - **Commits** con [Conventional Commits](https://www.conventionalcommits.org/es/v1.0.0/): `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`.
 
 ## Licencia

@@ -16,7 +16,7 @@ jobs:
   verificar:
     name: Formato, lint, tipos, tests y build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -36,5 +36,8 @@ jobs:
       - run: pnpm typecheck
 
       - run: pnpm test:coverage
+
+      # Levanta PostGIS efímero con Testcontainers (Docker viene en el runner).
+      - run: pnpm test:integracion
 
       - run: pnpm build
