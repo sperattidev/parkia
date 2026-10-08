@@ -10,7 +10,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/main.ts', 'src/db/migrar.ts', 'src/db/sembrar.ts', 'src/db/crear-personal.ts'],
+      exclude: [
+        'src/main.ts',
+        'src/db/migrar.ts',
+        'src/db/sembrar.ts',
+        'src/db/crear-personal.ts',
+        'src/db/simular.ts',
+      ],
     },
     projects: [
       {

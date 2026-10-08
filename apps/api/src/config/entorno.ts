@@ -8,6 +8,8 @@ const entornoSchema = z
      * configuración que producción pero admite cargas de prueba para mostrar el sistema.
      */
     PARKIA_ENTORNO: z.enum(['desarrollo', 'demo', 'produccion']).default('desarrollo'),
+    /** Mantiene actividad de conductores ficticios durante el horario de cobro (ver `simulacion/`). */
+    PARKIA_SIMULACION: z.stringbool().default(false),
     PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
@@ -35,6 +37,13 @@ const entornoSchema = z
         code: 'custom',
         path: ['CORREO_PROVEEDOR'],
         message: 'En producción los códigos de acceso deben enviarse por email (resend)',
+      });
+    }
+    if (entorno.PARKIA_ENTORNO === 'produccion' && entorno.PARKIA_SIMULACION) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PARKIA_SIMULACION'],
+        message: 'La actividad simulada no se habilita en producción',
       });
     }
     if (entorno.CORREO_PROVEEDOR === 'resend' && !entorno.RESEND_API_KEY) {

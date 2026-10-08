@@ -12,6 +12,7 @@ describe('validarEntorno', () => {
     expect(validarEntorno(minimo)).toEqual({
       NODE_ENV: 'development',
       PARKIA_ENTORNO: 'desarrollo',
+      PARKIA_SIMULACION: false,
       PORT: 3000,
       LOG_LEVEL: 'info',
       DATABASE_URL: minimo.DATABASE_URL,
@@ -59,6 +60,23 @@ describe('validarEntorno', () => {
       validarEntorno({ ...minimo, NODE_ENV: 'production', PARKIA_ENTORNO: 'demo' })
         .CORREO_PROVEEDOR,
     ).toBe('consola');
+  });
+
+  it('nunca habilita la actividad simulada en producción', () => {
+    const produccion = {
+      ...minimo,
+      PARKIA_ENTORNO: 'produccion',
+      CORREO_PROVEEDOR: 'resend',
+      RESEND_API_KEY: 're_123',
+    };
+    expect(() => validarEntorno({ ...produccion, PARKIA_SIMULACION: 'true' })).toThrow(
+      /PARKIA_SIMULACION/,
+    );
+    expect(validarEntorno(produccion).PARKIA_SIMULACION).toBe(false);
+    expect(
+      validarEntorno({ ...minimo, PARKIA_ENTORNO: 'demo', PARKIA_SIMULACION: 'true' })
+        .PARKIA_SIMULACION,
+    ).toBe(true);
   });
 
   it('con Resend exige la API key', () => {

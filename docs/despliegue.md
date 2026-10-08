@@ -95,6 +95,28 @@ ssh -t sperway-vps 'cd /opt/parkia && read -rsp "Contraseña: " PARKIA_CONTRASEN
 
 La contraseña se escribe sin mostrarse y no queda en el historial de la terminal. Roles: `agente` (control en la calle) o `admin` (todo lo del agente y, cuando exista, el panel municipal).
 
+### Actividad simulada (solo demo)
+
+En la demo no hay conductores reales, así que el padrón, el radar y el mapa de ocupación se verían vacíos. El simulador crea **conductores ficticios** (`conductor-001@demo.parkia.net.ar`, …) con su vehículo y saldo de prueba, y estaciona con los mismos servicios que la API: vencimientos e importes salen de la regla tarifaria real de cada zona. Respeta la capacidad de cada mano y los lugares numerados ocupados, incluida la actividad real. **Con `PARKIA_ENTORNO=produccion` se niega a correr.**
+
+```bash
+# Foto creíble ahora: ~35 % de ocupación, vencidos recientes por saldo agotado y estacionamientos por vencer
+ssh sperway-vps 'cd /opt/parkia && docker compose --env-file .env -f compose.yaml run --rm --no-deps api node dist/db/simular.js'
+
+# Otra ocupación (0 a 0,9) o municipio
+ssh sperway-vps 'cd /opt/parkia && docker compose --env-file .env -f compose.yaml run --rm --no-deps api node dist/db/simular.js --ocupacion 0.5 --municipio firmat'
+
+# Borrar lo simulado
+ssh sperway-vps 'cd /opt/parkia && docker compose --env-file .env -f compose.yaml run --rm --no-deps api node dist/db/simular.js --limpiar'
+```
+
+- Repetirlo no duplica nada: converge a la ocupación pedida, cierra los vencidos, retira a quien cumplió su estadía y repone llegadas.
+- Los vencidos solo existen **dentro del horario de cobro** (de 8 a 20 en días hábiles): fuera de ese horario el saldo no se consume y la foto solo tiene vehículos vigentes.
+- Para que la calle tenga movimiento durante toda la demostración, agregar `PARKIA_SIMULACION=true` en `/opt/parkia/.env` y volver a desplegar: cada 5 minutos, mientras alguna zona cobra, llegan conductores nuevos, se van los que cumplieron su estadía y uno de cada cinco se queda sin saldo (aparece en el radar). La validación del entorno impide habilitarlo en producción.
+- `--limpiar` borra los estacionamientos simulados, los controles hechos sobre ellos, los vehículos y las sesiones, y desactiva las cuentas ficticias. Sus billeteras y movimientos quedan: el libro de movimientos es inmutable por diseño. Nada que no pertenezca a una cuenta `@demo.parkia.net.ar` se modifica.
+
+En local: `pnpm --filter @parkia/api build && pnpm --filter @parkia/api db:simular` (acepta las mismas opciones después de `--`).
+
 ### Respaldos
 
 - `respaldos` hace un `pg_dump` diario en `/opt/parkia/respaldos` y conserva 7 diarios, 4 semanales y 6 mensuales.

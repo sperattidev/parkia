@@ -20,6 +20,7 @@ import { GestionModule } from './gestion/gestion.module.js';
 import { MunicipiosModule } from './municipios/municipios.module.js';
 import { PlataformaModule } from './plataforma/plataforma.module.js';
 import { SaludModule } from './salud/salud.module.js';
+import { SimulacionModule } from './simulacion/simulacion.module.js';
 import { ZonasModule } from './zonas/zonas.module.js';
 
 @Module({
@@ -72,6 +73,7 @@ import { ZonasModule } from './zonas/zonas.module.js';
     AgenteModule,
     GestionModule,
     PlataformaModule,
+    SimulacionModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: FiltroDeErrores },

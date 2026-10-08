@@ -64,6 +64,7 @@ services:
     environment: &entorno-api
       NODE_ENV: production
       PARKIA_ENTORNO: ${PARKIA_ENTORNO:-demo}
+      PARKIA_SIMULACION: ${PARKIA_SIMULACION:-false}
       LOG_LEVEL: info
       DATABASE_URL: postgres://parkia:${POSTGRES_PASSWORD}@postgres:5432/parkia
       AUTH_SECRET: ${AUTH_SECRET:?definir en .env}
