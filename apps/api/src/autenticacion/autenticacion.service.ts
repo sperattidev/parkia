@@ -1,7 +1,7 @@
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Sesion, Usuario } from '@parkia/contracts';
-import { and, desc, eq, gt, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, ne, sql } from 'drizzle-orm';
 
 import { ErrorDeApi } from '../comun/errores.js';
 import type { Entorno } from '../config/entorno.js';
@@ -13,6 +13,7 @@ import {
   HASH_SENUELO,
   generarCodigo,
   generarToken,
+  hashearContrasena,
   huella,
   huellasIguales,
   verificarContrasena,
@@ -183,6 +184,8 @@ export class AutenticacionService {
         id: usuarios.id,
         email: usuarios.email,
         nombre: usuarios.nombre,
+        administradorDeParkia: usuarios.administradorDeParkia,
+        debeCambiarContrasena: usuarios.debeCambiarContrasena,
       })
       .from(sesiones)
       .innerJoin(usuarios, eq(usuarios.id, sesiones.usuarioId))
@@ -207,12 +210,55 @@ export class AutenticacionService {
       .where(eq(sesiones.id, sesionId));
   }
 
+  /**
+   * Cambia la contraseña propia verificando la actual. Cierra las demás
+   * sesiones: si alguien más la conocía, deja de tener acceso.
+   */
+  async cambiarContrasena(
+    usuario: UsuarioAutenticado,
+    actual: string,
+    nueva: string,
+    ahora = new Date(),
+  ): Promise<void> {
+    const [fila] = await this.conexion.db
+      .select({ hash: usuarios.hashContrasena })
+      .from(usuarios)
+      .where(eq(usuarios.id, usuario.id));
+    const correcta = await verificarContrasena(actual, fila?.hash ?? HASH_SENUELO);
+    if (!fila?.hash || !correcta) {
+      throw new ErrorDeApi(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'CONTRASENA_ACTUAL_INCORRECTA',
+        'La contraseña actual no es correcta.',
+      );
+    }
+    const hashContrasena = await hashearContrasena(nueva);
+    await this.conexion.db.transaction(async (tx) => {
+      await tx
+        .update(usuarios)
+        .set({ hashContrasena, debeCambiarContrasena: false })
+        .where(eq(usuarios.id, usuario.id));
+      await tx
+        .update(sesiones)
+        .set({ revocadaEn: ahora })
+        .where(
+          and(
+            eq(sesiones.usuarioId, usuario.id),
+            isNull(sesiones.revocadaEn),
+            ne(sesiones.id, usuario.sesionId),
+          ),
+        );
+    });
+  }
+
   aUsuario(usuario: Omit<UsuarioAutenticado, 'sesionId'>): Usuario {
     return {
       id: usuario.id,
       email: usuario.email,
       nombre: usuario.nombre,
       membresias: usuario.membresias.map(({ municipio, rol }) => ({ municipio, rol })),
+      administradorDeParkia: usuario.administradorDeParkia,
+      debeCambiarContrasena: usuario.debeCambiarContrasena,
     };
   }
 
@@ -233,7 +279,13 @@ export class AutenticacionService {
     });
 
     const [usuario] = await this.conexion.db
-      .select({ id: usuarios.id, email: usuarios.email, nombre: usuarios.nombre })
+      .select({
+        id: usuarios.id,
+        email: usuarios.email,
+        nombre: usuarios.nombre,
+        administradorDeParkia: usuarios.administradorDeParkia,
+        debeCambiarContrasena: usuarios.debeCambiarContrasena,
+      })
       .from(usuarios)
       .where(eq(usuarios.id, usuarioId));
     if (!usuario) throw new Error(`Usuario ${usuarioId} inexistente al crear la sesión.`);
@@ -250,6 +302,12 @@ export class AutenticacionService {
       .select({ municipioId: municipios.id, municipio: municipios.slug, rol: membresias.rol })
       .from(membresias)
       .innerJoin(municipios, eq(municipios.id, membresias.municipioId))
-      .where(and(eq(membresias.usuarioId, usuarioId), eq(municipios.activo, true)));
+      .where(
+        and(
+          eq(membresias.usuarioId, usuarioId),
+          eq(membresias.activa, true),
+          eq(municipios.activo, true),
+        ),
+      );
   }
 }

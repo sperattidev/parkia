@@ -12,6 +12,22 @@ export function generarToken(): string {
   return randomBytes(32).toString('base64url');
 }
 
+/** Sin letras ni números que se confundan al dictarlos o copiarlos (0/O, 1/l/I). */
+const ALFABETO_TEMPORAL = 'abcdefghjkmnpqrstuvwxyz23456789';
+
+/**
+ * Contraseña temporal para el alta o el restablecimiento de personal:
+ * 16 caracteres (~79 bits) en grupos de 4, fácil de transmitir y que se exige
+ * cambiar en el primer ingreso.
+ */
+export function generarContrasenaTemporal(): string {
+  const caracteres = Array.from(
+    { length: 16 },
+    () => ALFABETO_TEMPORAL[randomInt(0, ALFABETO_TEMPORAL.length)] ?? 'a',
+  );
+  return [0, 4, 8, 12].map((i) => caracteres.slice(i, i + 4).join('')).join('-');
+}
+
 /** Código de acceso de 6 dígitos. */
 export function generarCodigo(): string {
   return randomInt(0, 1_000_000).toString().padStart(6, '0');

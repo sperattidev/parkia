@@ -5,7 +5,12 @@ import type { FastifyRequest } from 'fastify';
 
 import { ErrorDeApi } from '../comun/errores.js';
 import { AutenticacionService } from './autenticacion.service.js';
-import { ES_PUBLICO, ROLES_REQUERIDOS } from './decoradores.js';
+import {
+  CON_CONTRASENA_TEMPORAL,
+  ES_PUBLICO,
+  ROLES_REQUERIDOS,
+  SOLO_PARKIA,
+} from './decoradores.js';
 
 function tokenBearer(solicitud: FastifyRequest): string | null {
   const [esquema, token] = (solicitud.headers.authorization ?? '').split(' ');
@@ -14,7 +19,9 @@ function tokenBearer(solicitud: FastifyRequest): string | null {
 
 /**
  * Guardia global: toda ruta exige sesión salvo las marcadas con `@Publico()`.
- * Con `@RequiereRol(...)` además verifica la membresía en el municipio de la ruta.
+ * Con `@RequiereRol(...)` además verifica la membresía en el municipio de la ruta
+ * (el equipo de Parkia tiene acceso a todos, para dar soporte) y con
+ * `@SoloParkia()`, que sea del equipo de Parkia.
  */
 @Injectable()
 export class GuardiaDeAutenticacion implements CanActivate {
@@ -40,6 +47,26 @@ export class GuardiaDeAutenticacion implements CanActivate {
       );
     }
 
+    if (
+      usuario.debeCambiarContrasena &&
+      !this.reflector.getAllAndOverride<boolean>(CON_CONTRASENA_TEMPORAL, objetivos)
+    ) {
+      throw new ErrorDeApi(
+        HttpStatus.FORBIDDEN,
+        'CAMBIO_DE_CONTRASENA_REQUERIDO',
+        'Antes de seguir, cambiá la contraseña temporal que te asignaron.',
+      );
+    }
+
+    if (this.reflector.getAllAndOverride<boolean>(SOLO_PARKIA, objetivos)) {
+      if (usuario.administradorDeParkia) return true;
+      throw new ErrorDeApi(
+        HttpStatus.FORBIDDEN,
+        'SIN_PERMISO',
+        'Esta operación es exclusiva del equipo de Parkia.',
+      );
+    }
+
     const roles = this.reflector.getAllAndOverride<RolMunicipal[] | undefined>(
       ROLES_REQUERIDOS,
       objetivos,
@@ -47,6 +74,7 @@ export class GuardiaDeAutenticacion implements CanActivate {
     if (!roles?.length) return true;
 
     const { municipio } = solicitud.params as { municipio?: string };
+    if (usuario.administradorDeParkia) return true;
     const autorizado = usuario.membresias.some(
       (membresia) =>
         membresia.municipio === municipio &&

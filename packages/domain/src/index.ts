@@ -20,6 +20,7 @@ export {
   type RangoDeAlturas,
 } from './cuadras.js';
 export { ErrorDeDominio } from './errores.js';
+export { fechaLocal, fechasEntre, inicioDeFecha, sumarDias } from './fechas.js';
 export { centavos, formatearPesos, pesos, sumarCentavos, type Centavos } from './dinero.js';
 export {
   esPatenteValida,

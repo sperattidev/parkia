@@ -12,6 +12,8 @@ import type { UsuarioAutenticado } from './tipos.js';
 
 export const ES_PUBLICO = 'parkia:publico';
 export const ROLES_REQUERIDOS = 'parkia:roles';
+export const SOLO_PARKIA = 'parkia:solo-parkia';
+export const CON_CONTRASENA_TEMPORAL = 'parkia:con-contrasena-temporal';
 
 /** La ruta no requiere sesión. Todo lo demás exige `Authorization: Bearer`. */
 export const Publico = () => SetMetadata(ES_PUBLICO, true);
@@ -21,6 +23,15 @@ export const Publico = () => SetMetadata(ES_PUBLICO, true);
  * Un admin del municipio siempre tiene acceso.
  */
 export const RequiereRol = (...roles: RolMunicipal[]) => SetMetadata(ROLES_REQUERIDOS, roles);
+
+/** Solo el equipo de Parkia (alta de municipios y soporte). */
+export const SoloParkia = () => SetMetadata(SOLO_PARKIA, true);
+
+/**
+ * Ruta disponible aunque la contraseña sea temporal (ver quién soy, cambiarla
+ * o salir). Todas las demás exigen cambiarla primero.
+ */
+export const ConContrasenaTemporal = () => SetMetadata(CON_CONTRASENA_TEMPORAL, true);
 
 export const UsuarioActual = createParamDecorator(
   (_dato: unknown, contexto: ExecutionContext): UsuarioAutenticado => {

@@ -16,7 +16,9 @@ import { validarEntorno, type Entorno } from './config/entorno.js';
 import { CorreoModule } from './correo/correo.module.js';
 import { DbModule } from './db/db.module.js';
 import { EstacionamientosModule } from './estacionamientos/estacionamientos.module.js';
+import { GestionModule } from './gestion/gestion.module.js';
 import { MunicipiosModule } from './municipios/municipios.module.js';
+import { PlataformaModule } from './plataforma/plataforma.module.js';
 import { SaludModule } from './salud/salud.module.js';
 import { ZonasModule } from './zonas/zonas.module.js';
 
@@ -68,6 +70,8 @@ import { ZonasModule } from './zonas/zonas.module.js';
     BilleteraModule,
     EstacionamientosModule,
     AgenteModule,
+    GestionModule,
+    PlataformaModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: FiltroDeErrores },

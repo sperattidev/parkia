@@ -126,6 +126,10 @@ export const usuarios = pgTable('usuarios', {
   nombre: text(),
   /** Solo el personal municipal tiene contraseña; los conductores ingresan con código. */
   hashContrasena: text(),
+  /** La contraseña fue generada por otra persona: se exige cambiarla al ingresar. */
+  debeCambiarContrasena: boolean().notNull().default(false),
+  /** Equipo de Parkia: alta de municipios y soporte en todos ellos. */
+  administradorDeParkia: boolean().notNull().default(false),
   activo: boolean().notNull().default(true),
   ...auditoria,
 });
@@ -143,6 +147,8 @@ export const membresias = pgTable(
       .notNull()
       .references(() => municipios.id, { onDelete: 'restrict' }),
     rol: rolMunicipal().notNull(),
+    /** Dar de baja no borra la membresía: los controles y cambios que hizo siguen siendo suyos. */
+    activa: boolean().notNull().default(true),
     ...auditoria,
   },
   (tabla) => [
@@ -411,4 +417,32 @@ export const controles = pgTable(
     index('controles_cuadra_creado').on(tabla.cuadraId, tabla.creadoEn),
     index('controles_agente_creado').on(tabla.agenteId, tabla.creadoEn),
   ],
+);
+
+// ─── Auditoría ───────────────────────────────────────────────────────────────
+
+/**
+ * Quién cambió qué y cuándo en la configuración del municipio (tarifas, zonas,
+ * cuadras, personal). Solo admite inserciones (lo garantiza un trigger).
+ * Nunca guarda contraseñas ni tokens.
+ */
+export const registroDeAuditoria = pgTable(
+  'registro_de_auditoria',
+  {
+    id: uuid()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** Nulo en acciones de plataforma que no pertenecen a un municipio. */
+    municipioId: uuid().references(() => municipios.id, { onDelete: 'restrict' }),
+    usuarioId: uuid()
+      .notNull()
+      .references(() => usuarios.id, { onDelete: 'restrict' }),
+    accion: text().notNull(),
+    entidad: text().notNull(),
+    entidadId: text().notNull(),
+    antes: jsonb(),
+    despues: jsonb(),
+    creadoEn: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (tabla) => [index('auditoria_municipio_creado').on(tabla.municipioId, tabla.creadoEn)],
 );

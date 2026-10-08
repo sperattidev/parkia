@@ -5,6 +5,7 @@ import type { Billetera } from '@parkia/contracts';
 import { ErrorDeDominio, centavos, formatearPesos } from '@parkia/domain';
 import { and, desc, eq } from 'drizzle-orm';
 
+import { Reloj } from '../comun/reloj.js';
 import type { Conexion, Transaccion } from '../db/conexion.js';
 import { CONEXION } from '../db/db.module.js';
 import { billeteras, movimientos } from '../db/esquema.js';
@@ -38,6 +39,7 @@ export class BilleteraService {
   constructor(
     @Inject(CONEXION) private readonly conexion: Conexion,
     private readonly municipios: MunicipiosService,
+    private readonly reloj: Reloj,
   ) {}
 
   alAcreditar(observador: ObservadorDeAcreditacion): void {
@@ -93,6 +95,8 @@ export class BilleteraService {
       referencia: movimiento.referencia,
       descripcion: movimiento.descripcion,
       registradoPor: movimiento.registradoPor ?? null,
+      // La hora del movimiento es la de la operación (el reloj de la app), como en el resto del dominio.
+      creadoEn: this.reloj.ahora(),
     });
     return saldoResultante;
   }

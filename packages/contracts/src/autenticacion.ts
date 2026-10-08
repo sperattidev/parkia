@@ -34,8 +34,28 @@ export const usuarioSchema = z
     email: z.email(),
     nombre: z.string().nullable(),
     membresias: z.array(z.object({ municipio: z.string(), rol: rolMunicipalSchema })),
+    administradorDeParkia: z
+      .boolean()
+      .meta({ description: 'Equipo de Parkia: acceso a todos los municipios' }),
+    debeCambiarContrasena: z.boolean().meta({
+      description: 'Tiene una contraseña temporal: debe cambiarla antes de seguir',
+    }),
   })
   .meta({ id: 'Usuario' });
+
+/** Mínimo para contraseñas del personal: largas antes que complicadas. */
+export const contrasenaNuevaSchema = z
+  .string()
+  .min(12, 'La contraseña debe tener al menos 12 caracteres')
+  .max(200, 'La contraseña no puede superar los 200 caracteres');
+
+export const cambioDeContrasenaSchema = z
+  .object({ actual: z.string().min(1).max(200), nueva: contrasenaNuevaSchema })
+  .refine((cambio) => cambio.actual !== cambio.nueva, {
+    message: 'La contraseña nueva tiene que ser distinta de la actual',
+    path: ['nueva'],
+  })
+  .meta({ id: 'CambioDeContrasena' });
 
 export type Usuario = z.infer<typeof usuarioSchema>;
 

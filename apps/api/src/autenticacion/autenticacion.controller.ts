@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, Req } from '
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import {
+  cambioDeContrasenaSchema,
   ingresoConCodigoSchema,
   ingresoConContrasenaSchema,
   sesionSchema,
@@ -15,7 +16,7 @@ import type { z } from 'zod';
 
 import { ipDelCliente } from '../comun/ip-cliente.js';
 import { AutenticacionService, type DatosDeConexion } from './autenticacion.service.js';
-import { Publico, UsuarioActual } from './decoradores.js';
+import { ConContrasenaTemporal, Publico, UsuarioActual } from './decoradores.js';
 import type { UsuarioAutenticado } from './tipos.js';
 
 /** Límite estricto para endpoints que aceptan credenciales: 5 por minuto por IP. */
@@ -72,6 +73,25 @@ export class AutenticacionController {
     return this.autenticacion.ingresarConContrasena(email, contrasena, datosDeConexion(solicitud));
   }
 
+  @ConContrasenaTemporal()
+  @Throttle(LIMITE_CREDENCIALES)
+  @Post('contrasena')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Cambia la contraseña propia (personal municipal)',
+    description: 'Cierra las demás sesiones del usuario.',
+  })
+  @ApiResponse({ status: 422, description: 'CONTRASENA_ACTUAL_INCORRECTA' })
+  async cambiarContrasena(
+    @Body({ schema: cambioDeContrasenaSchema })
+    { actual, nueva }: z.infer<typeof cambioDeContrasenaSchema>,
+    @UsuarioActual() usuario: UsuarioAutenticado,
+  ): Promise<void> {
+    await this.autenticacion.cambiarContrasena(usuario, actual, nueva);
+  }
+
+  @ConContrasenaTemporal()
   @Delete('sesiones/actual')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
@@ -80,6 +100,7 @@ export class AutenticacionController {
     await this.autenticacion.cerrarSesion(usuario.sesionId);
   }
 
+  @ConContrasenaTemporal()
   @Get('yo')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Usuario de la sesión actual' })
