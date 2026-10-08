@@ -5,14 +5,13 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import { NavegacionDelAgente } from '@/componentes/agente/navegacion';
+import { BotonSalir } from '@/componentes/boton-salir';
 import { ProveedorDeRonda } from '@/componentes/agente/ronda';
 import { Isotipo } from '@/componentes/marca';
 import { obtenerDeLaApi } from '@/lib/servidor/api';
 import { entornoParkia } from '@/lib/servidor/entorno';
 import { municipioPorSlug } from '@/lib/servidor/municipios';
-import { municipiosDeControl, usuarioActual } from '@/lib/servidor/personal';
-
-import { BotonSalir } from '../salir';
+import { municipiosDeControl, personalActual } from '@/lib/servidor/personal';
 
 export async function generateMetadata({
   params,
@@ -29,8 +28,7 @@ export default async function LayoutAgente({
   children,
 }: LayoutProps<'/agente/[municipio]'>) {
   const { municipio: slug } = await params;
-  const usuario = await usuarioActual();
-  if (!usuario) redirect(`/agente/ingresar`);
+  const usuario = await personalActual();
   if (!municipiosDeControl(usuario).includes(slug)) redirect('/agente');
 
   const [municipio, mapa] = await Promise.all([

@@ -1,9 +1,32 @@
-import type { Mapa } from '@parkia/contracts';
-
 type Posicion = readonly [number, number];
 
+/**
+ * Lo mínimo para dibujar cuadras: lo cumplen el mapa público (`Mapa`) y el
+ * de gestión, que incluye cuadras sin zona.
+ */
+export interface CuadrasDibujables {
+  readonly zonas: readonly {
+    readonly id: string;
+    readonly nombre: string;
+    readonly color: string;
+  }[];
+  readonly cuadras: {
+    readonly type: 'FeatureCollection';
+    readonly features: readonly {
+      readonly type: 'Feature';
+      readonly id: string;
+      readonly geometry: { readonly type: 'LineString'; readonly coordinates: readonly Posicion[] };
+      readonly properties: {
+        readonly zonaId: string | null;
+        readonly calle: string;
+        readonly color: string;
+      };
+    }[];
+  };
+}
+
 /** Rectángulo que contiene todas las cuadras: `[[oeste, sur], [este, norte]]`. */
-export function limites(mapa: Mapa): [[number, number], [number, number]] | null {
+export function limites(mapa: CuadrasDibujables): [[number, number], [number, number]] | null {
   const puntos = mapa.cuadras.features.flatMap((cuadra) => cuadra.geometry.coordinates);
   if (puntos.length === 0) return null;
   const lngs = puntos.map(([lng]) => lng);
@@ -33,7 +56,7 @@ export function puntoMedio(linea: readonly Posicion[]): [number, number] {
 }
 
 /** Un punto por zona, en el centro de sus cuadras, para rotular el mapa. */
-export function rotulosDeZonas(mapa: Mapa) {
+export function rotulosDeZonas(mapa: CuadrasDibujables) {
   return {
     type: 'FeatureCollection' as const,
     features: mapa.zonas.flatMap((zona) => {

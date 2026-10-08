@@ -21,7 +21,8 @@
 | ----------------------- | ------------------------------ | ------------------------------------ | ----------------------------------------------------------------------------------------- |
 | **Parkia Conductor**    | Vecino que estaciona           | **PWA** (Next.js)                    | Sin pasar por las tiendas: escanea el QR del cartel y estaciona. Instalable en el celular |
 | **Parkia Control**      | Inspector / agente de control  | **Web** (`/agente`); luego Expo      | Hoy: padrón por cuadra, radar y control con GPS. Luego: cámara para patentes y sin señal  |
-| **Parkia Gestión**      | Municipio (Tránsito, Hacienda) | Next.js (backoffice)                 | Zonas en mapa, tarifas, exenciones, reportes, auditoría                                   |
+| **Parkia Gestión**      | Municipio (Tránsito, Hacienda) | Next.js (`/gestion`)                 | Reportes, ocupación, tarifas, cuadras en mapa, personal y auditoría                       |
+| **Parkia Plataforma**   | Equipo de Parkia               | Next.js (`/plataforma`)              | Alta de municipios y su primer administrador, indicadores de cada cliente                 |
 | **Parkia Transparente** | Público / prensa / concejales  | Next.js (páginas públicas)           | Tablero de recaudación y ocupación en tiempo real: el diferencial                         |
 | **Punto de venta**      | Kiosco o comercio              | Dentro de la PWA, con rol "comercio" | Cargar saldo o activar estacionamiento por patente para quien no tiene celular            |
 | **API**                 | Todas las anteriores           | NestJS                               | Núcleo de negocio                                                                         |
@@ -206,13 +207,13 @@ Hoy existen municipio, zonas con regla tarifaria y feriados, cuadras, personal c
 
 **Incluido** (✅ hecho · ◐ parcial · ⬜ falta; detalle en [estado.md](estado.md))
 
-- ◐ **Gestión:** municipio, zonas, cuadras, tarifas, horarios y feriados existen en la base, pero se cargan por semilla. ⬜ Panel municipal.
+- ✅ **Gestión:** panel municipal con reportes, exportación a Excel, ocupación en vivo, tarifas con vista previa del cobro, cuadras en el mapa, personal y auditoría. ✅ Alta de municipios desde el panel de Parkia.
 - ◐ **Conductor (PWA):** ✅ ingreso por código, patentes, estacionar por cuadra, mano y lugar con cobro por tiempo real, historial. ⬜ Carga de saldo con Mercado Pago (hoy, cargas de prueba).
 - ◐ **Agente:** ✅ ingreso, padrón, radar, control manual y jornada. ⬜ Actas con foto, lectura por cámara y modo offline.
 - ⬜ **Comercio:** activar estacionamiento o cargar saldo por patente.
-- ⬜ **Reportes:** recaudación por día, zona y medio de pago; exportación CSV de actas.
+- ◐ **Reportes:** ✅ recaudación por día, hora y zona, y exportación de estacionamientos y controles. ⬜ Por medio de pago (llega con Mercado Pago) y actas.
 - ⬜ **Tablero público de transparencia.**
-- ◐ **Auditoría:** ✅ movimientos de saldo inmutables y cada control registrado. ⬜ Registro general de cambios (quién, qué, cuándo, antes y después).
+- ✅ **Auditoría:** movimientos de saldo y registro de cambios de configuración, ambos inmutables, y cada control registrado.
 
 **Fuera del MVP (siguientes fases)**
 

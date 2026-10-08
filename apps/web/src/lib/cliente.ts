@@ -23,7 +23,7 @@ const MENSAJE_SIN_CONEXION = 'No pudimos conectarnos. Revisá tu conexión e int
 /** Llamada a un endpoint propio de la web (mismo origen, con la cookie de sesión). */
 export async function pedir<T>(
   url: string,
-  opciones: { metodo?: 'GET' | 'POST' | 'DELETE'; cuerpo?: unknown } = {},
+  opciones: { metodo?: 'GET' | 'POST' | 'PATCH' | 'DELETE'; cuerpo?: unknown } = {},
 ): Promise<T> {
   let respuesta: Response;
   try {

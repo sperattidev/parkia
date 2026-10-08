@@ -1,27 +1,27 @@
-import { Radar, ScanLine, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { BarChart3, ScanLine, ShieldCheck, type LucideIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 
 import { Marca } from '@/componentes/marca';
 
 import { FormularioDePersonal } from './formulario';
 
-export const metadata: Metadata = { title: 'Control · Ingresar' };
+export const metadata: Metadata = { title: 'Ingreso del personal' };
 
 const PUNTOS: readonly { Icono: LucideIcon; titulo: string; texto: string }[] = [
   {
     Icono: ScanLine,
-    titulo: 'Padrón de cada cuadra',
-    texto: 'Quién pagó, en qué mano y en qué lugar.',
+    titulo: 'Control en la calle',
+    texto: 'Padrón de cada cuadra y radar de vencidos para los agentes.',
   },
   {
-    Icono: Radar,
-    titulo: 'Radar de vencidos',
-    texto: 'Los vehículos que se quedaron sin saldo, los más cercanos primero.',
+    Icono: BarChart3,
+    titulo: 'Gestión municipal',
+    texto: 'Recaudación, ocupación, tarifas, cuadras y personal.',
   },
   {
     Icono: ShieldCheck,
-    titulo: 'Cada control queda registrado',
-    texto: 'Con hora, ubicación y resultado, para auditar y labrar actas.',
+    titulo: 'Todo queda registrado',
+    texto: 'Cada control y cada cambio de configuración, con quién y cuándo.',
   },
 ];
 
@@ -37,14 +37,14 @@ export default function IngresarPersonal() {
           <span className="flex items-center gap-3">
             <Marca className="[&_span]:text-white" />
             <span className="rounded-full border border-white/20 px-2.5 py-0.5 text-[0.7rem] font-bold tracking-widest uppercase">
-              Control
+              Personal
             </span>
           </span>
           <h1 className="mt-8 max-w-md text-3xl leading-[1.1] font-extrabold tracking-tight lg:mt-0 lg:pt-24 lg:text-5xl">
-            La ronda de control, cuadra por cuadra.
+            El estacionamiento medido del municipio, en un solo lugar.
           </h1>
           <p className="mt-4 max-w-md text-white/70 lg:text-lg">
-            Para agentes de tránsito y personal municipal.
+            Para agentes de tránsito, la administración municipal y el equipo de Parkia.
           </p>
         </div>
 

@@ -85,15 +85,23 @@ pk logs api | grep 'código'   # en demo: códigos de acceso enviados por consol
 pk restart web
 ```
 
-### Personal municipal
+### Personal
 
-Agentes y administradores ingresan en `app.parkia.net.ar/agente` con email y contraseña (mínimo 12 caracteres). Para crear una cuenta, o cambiarle la contraseña a una existente, desde la PC:
+Todo el personal ingresa en `app.parkia.net.ar/personal/ingresar` y Parkia lo lleva a su panel según el rol. **Las altas del día a día se hacen desde los paneles**: el equipo de Parkia da de alta cada municipio con su primer administrador (`/plataforma`), y ese administrador suma a su personal desde el panel municipal. Los dos generan una contraseña temporal que la persona cambia al ingresar.
+
+Por terminal queda la cuenta inicial del **equipo de Parkia** (una sola vez) y el soporte. Desde la PC, con `--parkia`:
+
+```bash
+ssh -t sperway-vps 'cd /opt/parkia && read -rsp "Contraseña: " PARKIA_CONTRASENA && echo && export PARKIA_CONTRASENA && docker compose --env-file .env -f compose.yaml run --rm --no-deps -e PARKIA_CONTRASENA api node dist/db/crear-personal.js --email equipo@parkia.net.ar --parkia'
+```
+
+Para una cuenta de un municipio (o para cambiarle la contraseña a una existente):
 
 ```bash
 ssh -t sperway-vps 'cd /opt/parkia && read -rsp "Contraseña: " PARKIA_CONTRASENA && echo && export PARKIA_CONTRASENA && docker compose --env-file .env -f compose.yaml run --rm --no-deps -e PARKIA_CONTRASENA api node dist/db/crear-personal.js --email agente@firmat.gob.ar --municipio firmat --rol agente'
 ```
 
-La contraseña se escribe sin mostrarse y no queda en el historial de la terminal. Roles: `agente` (control en la calle) o `admin` (todo lo del agente y, cuando exista, el panel municipal).
+La contraseña se escribe sin mostrarse y no queda en el historial de la terminal. Roles: `agente` (control en la calle) o `admin` (todo lo del agente y el panel municipal).
 
 ### Actividad simulada (solo demo)
 

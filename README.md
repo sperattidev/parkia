@@ -2,7 +2,7 @@
 
 Sistema de estacionamiento medido para municipios y comunas de Argentina: app para conductores, app para agentes de control, gestión municipal y tablero público de transparencia.
 
-> Estado: **MVP en demostración** en <https://app.parkia.net.ar/firmat> (conductor) y <https://app.parkia.net.ar/agente> (control). Primer objetivo: piloto en el microcentro de Firmat, Santa Fe. Qué está hecho y qué falta: [docs/estado.md](docs/estado.md).
+> Estado: **MVP en demostración** en <https://app.parkia.net.ar/firmat> (conductor) y <https://app.parkia.net.ar/personal/ingresar> (agentes, panel municipal y equipo de Parkia). Primer objetivo: piloto en el microcentro de Firmat, Santa Fe. Qué está hecho y qué falta: [docs/estado.md](docs/estado.md).
 
 ## Documentación
 
@@ -20,7 +20,7 @@ Sistema de estacionamiento medido para municipios y comunas de Argentina: app pa
 ```
 apps/
   api/           API REST (NestJS 12 + Fastify + PostgreSQL/PostGIS)
-  web/           Next.js 16: app del conductor (PWA) y app de control para agentes (/agente)
+  web/           Next.js 16: conductor (PWA), control (/agente), panel municipal (/gestion) y plataforma (/plataforma)
 packages/
   domain/        Reglas de negocio puras: tarifas, horarios, cuadras, control, dinero
   contracts/     Esquemas Zod compartidos entre la API y los clientes
@@ -54,7 +54,7 @@ pnpm --filter @parkia/web dev           # conductor: http://localhost:3001/firma
 - Especificación OpenAPI: <http://localhost:3000/docs/openapi.json>
 - Salud: <http://localhost:3000/salud>
 - En desarrollo los códigos de acceso por email se muestran en el log de la API.
-- El agente de desarrollo (`agente@firmat.test`) ingresa con la contraseña indicada en `apps/api/.env.example`.
+- Cuentas de personal para desarrollo (agente, administrador de Firmat y equipo de Parkia): se crean con los comandos de `apps/api/.env.example` e ingresan en <http://localhost:3001/personal/ingresar>.
 - Para depurar un test de integración: `LOG_LEVEL_PRUEBAS=error pnpm test:integracion` muestra los errores de la API.
 
 ## Comandos

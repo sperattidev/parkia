@@ -3,8 +3,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Toaster } from 'sonner';
+import { z } from 'zod';
 
 import { ErrorDeParkia } from '@/lib/cliente';
+
+// Mensajes de validación en español también en el navegador (los esquemas de @parkia/contracts).
+z.config(z.locales.es());
 
 export function Proveedores({ children }: { children: ReactNode }) {
   const [cliente] = useState(

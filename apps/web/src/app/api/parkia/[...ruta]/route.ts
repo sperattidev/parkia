@@ -26,16 +26,22 @@ async function reenviar(solicitud: NextRequest, { params }: Contexto): Promise<N
     token: await tokenDeSesion(),
   });
 
+  // Se respetan el tipo y el nombre de archivo de la API (JSON o descargas CSV).
+  const encabezados = new Headers({
+    'content-type': respuesta.headers.get('content-type') ?? 'application/json; charset=utf-8',
+  });
+  const adjunto = respuesta.headers.get('content-disposition');
+  if (adjunto) encabezados.set('content-disposition', adjunto);
   const salida =
     respuesta.status === 204
       ? new NextResponse(null, { status: 204 })
-      : new NextResponse(await respuesta.text(), {
+      : new NextResponse(await respuesta.arrayBuffer(), {
           status: respuesta.status,
-          headers: { 'content-type': 'application/json; charset=utf-8' },
+          headers: encabezados,
         });
   // Una sesión vencida o revocada en la API se limpia también en el navegador.
   if (respuesta.status === 401) borrarSesion(salida);
   return salida;
 }
 
-export { reenviar as DELETE, reenviar as GET, reenviar as POST };
+export { reenviar as DELETE, reenviar as GET, reenviar as PATCH, reenviar as POST };

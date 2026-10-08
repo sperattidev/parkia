@@ -17,8 +17,8 @@ export function FormularioDePersonal() {
       pedir('/api/sesion/personal', { metodo: 'POST', cuerpo: { email, contrasena } }),
     onSuccess: () => {
       setIngresado(true);
-      // Navegación completa: el servidor resuelve el municipio con la cookie ya guardada.
-      window.location.replace('/agente');
+      // Navegación completa: el servidor decide a qué panel va según sus roles.
+      window.location.replace('/personal');
     },
     onError: (error) => {
       setContrasena('');

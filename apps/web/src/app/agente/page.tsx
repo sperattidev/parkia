@@ -3,14 +3,13 @@ import type { Route } from 'next';
 import { redirect } from 'next/navigation';
 
 import { EstadoVacio } from '@/componentes/ui';
-import { municipiosDeControl, usuarioActual } from '@/lib/servidor/personal';
+import { municipiosDeControl, personalActual } from '@/lib/servidor/personal';
 
-import { BotonSalir } from './salir';
+import { BotonSalir } from '@/componentes/boton-salir';
 
 /** Entrada de la app de control: lleva al municipio del agente. */
 export default async function InicioAgente() {
-  const usuario = await usuarioActual();
-  if (!usuario) redirect('/agente/ingresar');
+  const usuario = await personalActual();
 
   const [municipio] = municipiosDeControl(usuario);
   if (municipio) redirect(`/agente/${municipio}` as Route);

@@ -1,12 +1,11 @@
 'use client';
 
-import type { Mapa as MapaDeCuadras } from '@parkia/contracts';
 import type { ExpressionSpecification, GeoJSONSource, Map as MapaMapLibre } from 'maplibre-gl';
 import { useEffect, useEffectEvent, useRef, useSyncExternalStore } from 'react';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import { limites, rotulosDeZonas } from '@/lib/geo';
+import { limites, rotulosDeZonas, type CuadrasDibujables as MapaDeCuadras } from '@/lib/geo';
 
 const ESTILOS = {
   claro: process.env.NEXT_PUBLIC_ESTILO_MAPA ?? 'https://tiles.openfreemap.org/styles/positron',
@@ -33,7 +32,8 @@ function useTemaOscuro(): boolean {
 }
 
 /** Espacio que ocupan la hoja inferior (celular) o el panel lateral (escritorio). */
-function margenes() {
+function margenes(conHoja: boolean) {
+  if (!conHoja) return { top: 40, bottom: 40, left: 40, right: 40 };
   return window.matchMedia(CONSULTA_ESCRITORIO).matches
     ? { top: 64, bottom: 64, left: 480, right: 64 }
     : { top: 96, bottom: 380, left: 32, right: 32 };
@@ -128,7 +128,8 @@ function agregarCuadras(mapa: MapaMapLibre, datos: MapaDeCuadras, oscuro: boolea
     source: 'cuadras',
     layout: linea,
     paint: {
-      'line-color': ['get', 'color'],
+      // Un color propio por cuadra (por ejemplo, según su ocupación) prevalece sobre el de la zona.
+      'line-color': ['coalesce', ['feature-state', 'color'], ['get', 'color']],
       'line-width': grosor([2.5, 10], [5, 16]),
       'line-opacity': ['case', seleccionada, 1, atenuada, 0.3, oscuro ? 0.85 : 0.75],
     },
@@ -208,7 +209,10 @@ export function Mapa({
   mapa,
   cuadraSeleccionada,
   atenuadas,
+  colores,
   avisos,
+  conHoja = true,
+  geolocalizarAlAbrir = true,
   alUbicar,
   alTocarCuadra,
   className,
@@ -218,6 +222,12 @@ export function Mapa({
   /** Cuadras que se dibujan tenues (por ejemplo, las que nadie controló hoy). */
   atenuadas?: ReadonlySet<string> | undefined;
   avisos?: readonly Aviso[] | undefined;
+  /** Color por cuadra que reemplaza al de su zona. */
+  colores?: ReadonlyMap<string, string> | undefined;
+  /** Deja lugar para la hoja inferior (celular) o el panel lateral (escritorio) al encuadrar. */
+  conHoja?: boolean;
+  /** Pide la ubicación al abrir (conductor y agente; no en el panel municipal). */
+  geolocalizarAlAbrir?: boolean;
   alUbicar?: (ubicacion: Ubicacion) => void;
   alTocarCuadra?: (cuadraId: string) => void;
   className?: string;
@@ -229,6 +239,7 @@ export function Mapa({
   const notificarToque = useEffectEvent((cuadraId: string) => alTocarCuadra?.(cuadraId));
   // El mapa se crea una vez por tema; los datos nuevos (ocupación) se aplican en el lugar.
   const datosActuales = useEffectEvent(() => mapa);
+  const opciones = useEffectEvent(() => ({ conHoja, geolocalizarAlAbrir }));
   const marcarSeleccion = useEffectEvent((instancia: MapaMapLibre) => {
     for (const cuadra of mapa.cuadras.features) {
       instancia.setFeatureState(
@@ -236,6 +247,7 @@ export function Mapa({
         {
           seleccionada: cuadra.id === cuadraSeleccionada,
           atenuada: atenuadas?.has(cuadra.id) ?? false,
+          color: colores?.get(cuadra.id) ?? null,
         },
       );
     }
@@ -256,7 +268,10 @@ export function Mapa({
         container: contenedorRef.current,
         style: oscuro ? ESTILOS.oscuro : ESTILOS.claro,
         ...(recuadro
-          ? { bounds: recuadro, fitBoundsOptions: { padding: margenes(), maxZoom: 16.5 } }
+          ? {
+              bounds: recuadro,
+              fitBoundsOptions: { padding: margenes(opciones().conHoja), maxZoom: 16.5 },
+            }
           : { center: [-61.4875, -33.46], zoom: 14 }),
         attributionControl: { compact: true },
         dragRotate: false,
@@ -293,7 +308,7 @@ export function Mapa({
       });
       instancia.once('load', () => {
         // Pide la ubicación al abrir: es lo primero que se necesita para estacionar o controlar.
-        geolocalizar.trigger();
+        if (opciones().geolocalizarAlAbrir) geolocalizar.trigger();
       });
     });
 
@@ -315,7 +330,7 @@ export function Mapa({
     const instancia = mapaRef.current;
     // No se usa isStyleLoaded(): da falso mientras cargan las teselas del fondo.
     if (instancia?.getSource('cuadras')) marcarSeleccion(instancia);
-  }, [cuadraSeleccionada, atenuadas, avisos]);
+  }, [cuadraSeleccionada, atenuadas, avisos, colores]);
 
   return (
     <div

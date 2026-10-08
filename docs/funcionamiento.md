@@ -7,10 +7,18 @@ Reglas operativas del sistema, en lenguaje llano. Complementa [tarifas.md](tarif
 | Quién                       | Cómo ingresa                                                                          | Qué puede hacer                                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | **Conductor**               | Con su email: recibe un código de 6 dígitos (sin contraseña). La sesión dura 30 días. | Registrar hasta 10 vehículos, cargar saldo, iniciar y finalizar estacionamientos, ver su historial. |
-| **Agente de control**       | Email y contraseña asignados por el municipio. La sesión dura una jornada (12 h).     | Verificar patentes en la calle.                                                                     |
-| **Administrador municipal** | Email y contraseña.                                                                   | Todo lo del agente (y, en próximas versiones, gestión de zonas, tarifas y reportes).                |
+| **Agente de control**       | Email y contraseña asignados por el municipio. La sesión dura una jornada (12 h).     | Verificar patentes en la calle (app de control).                                                    |
+| **Administrador municipal** | Email y contraseña.                                                                   | Todo lo del agente y el panel municipal: reportes, tarifas, zonas, cuadras, personal y auditoría.   |
+| **Equipo de Parkia**        | Email y contraseña.                                                                   | Alta de municipios y su primer administrador; acceso a cualquier panel municipal para dar soporte.  |
 
-Una misma cuenta de conductor sirve en todos los municipios que usen Parkia.
+Una misma cuenta de conductor sirve en todos los municipios que usen Parkia. El personal ingresa en `/personal/ingresar` y Parkia lo lleva a su panel según su rol.
+
+**Contraseñas del personal:**
+
+- Cuando el municipio da de alta a una persona (o le restablece la contraseña), Parkia genera una **contraseña temporal** que se muestra una sola vez. Al ingresar, la persona tiene que elegir una propia antes de poder hacer cualquier otra cosa.
+- Cambiar la contraseña cierra las sesiones abiertas en otros dispositivos.
+- Un email que ya está registrado como conductor no puede convertirse en cuenta de personal: el administrador conocería la contraseña de la cuenta de un vecino. Para el personal se usan emails institucionales.
+- Dar de baja a una persona corta su acceso en el momento; sus controles y cambios siguen registrados a su nombre.
 
 ## Saldo
 
@@ -83,10 +91,22 @@ Además informa:
 
 **Cada verificación queda registrada** con agente, patente, cuadra, ubicación, precisión del GPS, hora y resultado. Es la base para el labrado de actas (próxima versión) y para auditar la tarea de control.
 
+## Panel municipal
+
+Para la administración del municipio, en `/gestion/<municipio>`:
+
+- **Resumen:** recaudación, saldo cargado, estacionamientos, duración promedio, ocupación en este momento y controles, por día, por hora y por zona, para el período elegido. Lo recaudado se cuenta el día en que termina cada estacionamiento (cuando se cobra).
+- **Ocupación:** mapa en vivo con las cuadras coloreadas según cuántos lugares pagos hay sobre su capacidad, y las cuadras más ocupadas.
+- **Estacionamientos y controles:** listados con filtros (patente, zona, estado, resultado, agente) y **exportación a Excel**.
+- **Zonas y tarifas:** horario de cobro, precios por tramo, fracción, mínimo, tolerancia, tope diario y feriados. Mientras se edita, el panel calcula con el mismo motor de cobro **cuánto pagaría un conductor** por 30 minutos, 1, 2 y 4 horas. Un cambio de tarifa rige para los estacionamientos que empiezan después.
+- **Cuadras:** se elige una zona como pincel y se tocan en el mapa las cuadras que la forman (4 por manzana, 3 si es triangular). También se ajusta la capacidad de cada mano, los lugares numerados y si la cuadra está habilitada.
+- **Personal:** altas, cambio de rol, bajas y restablecimiento de contraseñas, con el último ingreso y los controles del día de cada persona.
+- **Auditoría:** cada cambio de tarifas, zonas, cuadras y personal, con quién lo hizo, cuándo, y el antes y después. **El registro no se puede modificar ni borrar**, ni siquiera desde la base de datos.
+
 ## Próximas versiones
 
 - Carga de saldo con Mercado Pago (hoy: cargas de prueba en entornos de desarrollo).
 - Actas de infracción con foto y envío al Juzgado de Faltas.
 - Exenciones (discapacidad, frentistas, vehículos oficiales) y abonos.
 - Puntos de venta en comercios.
-- Gestión de zonas, cuadras y tarifas desde el panel municipal (eligiendo manzanas en el mapa).
+- Alta de cuadras nuevas dibujándolas en el mapa (hoy se cargan desde OpenStreetMap y el panel asigna las existentes).
