@@ -50,6 +50,12 @@ infra/desplegar.sh              # despliega el commit actual
 infra/desplegar.sh --sembrar    # además carga los datos de demostración (idempotente)
 ```
 
+En Windows, si el `ssh` de Git Bash no encuentra la clave, se puede usar el cliente de Windows:
+
+```bash
+PARKIA_SSH=/c/Windows/System32/OpenSSH/ssh.exe infra/desplegar.sh
+```
+
 El script:
 
 1. Construye las imágenes `parkia-api` y `parkia-web` con la versión del commit.
@@ -81,10 +87,13 @@ pk restart web
 
 ### Personal municipal
 
+Agentes y administradores ingresan en `app.parkia.net.ar/agente` con email y contraseña (mínimo 12 caracteres). Para crear una cuenta, o cambiarle la contraseña a una existente, desde la PC:
+
 ```bash
-pk exec -e PARKIA_CONTRASENA='una-clave-de-12-o-mas' api \
-  node dist/db/crear-personal.js --email agente@firmat.gob.ar --municipio firmat --rol agente
+ssh -t sperway-vps 'cd /opt/parkia && read -rsp "Contraseña: " PARKIA_CONTRASENA && echo && export PARKIA_CONTRASENA && docker compose --env-file .env -f compose.yaml run --rm --no-deps -e PARKIA_CONTRASENA api node dist/db/crear-personal.js --email agente@firmat.gob.ar --municipio firmat --rol agente'
 ```
+
+La contraseña se escribe sin mostrarse y no queda en el historial de la terminal. Roles: `agente` (control en la calle) o `admin` (todo lo del agente y, cuando exista, el panel municipal).
 
 ### Respaldos
 
@@ -110,3 +119,6 @@ pk exec -e PARKIA_CONTRASENA='una-clave-de-12-o-mas' api \
 - Copia de respaldos a R2 y prueba de restauración mensual.
 - Build y publicación de imágenes desde GitHub Actions (GHCR) para desplegar sin una PC.
 - Monitoreo externo de `api.parkia.net.ar/salud` y alertas.
+- Seguimiento de errores (Sentry) en API y web.
+
+El estado general del producto y lo que falta está en [estado.md](estado.md).
