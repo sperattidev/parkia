@@ -37,6 +37,7 @@
 
 ### Demo
 
+- **Emails reales** con Resend desde `no-responder@parkia.net.ar` (dominio verificado con SPF, DKIM y DMARC): el código de ingreso llega al correo del conductor.
 - **Simulador de actividad** (solo en demo y desarrollo): conductores ficticios que estacionan con las reglas reales, para que padrón, radar, ocupación y reportes muestren movimiento ([despliegue.md](despliegue.md#actividad-simulada-solo-demo)).
 
 ### Núcleo (API y dominio)
@@ -58,27 +59,26 @@
 
 ### 1. Para mostrar la demo sin depender de mí (corto plazo)
 
-| Pendiente                                     | Por qué importa                                                                                                                                                   |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Emails reales con Resend**                  | Hoy en la demo el código de ingreso aparece solo en el log del servidor: nadie del municipio puede entrar solo. Requiere cuenta de Resend y verificar el dominio. |
-| **Cuenta del equipo de Parkia en producción** | Se crea una sola vez con el comando de [despliegue.md](despliegue.md#personal); desde ahí se da de alta todo lo demás en los paneles.                             |
-| **Textos que prometen de más**                | El ingreso dice «Te avisamos antes de que venza», pero los avisos todavía no existen. Hay que implementarlos o quitar la frase.                                   |
-| **Propuesta comercial**                       | Documento y presentación para la Municipalidad de Firmat (precio, modelo, cronograma del piloto), basados en [mercado.md](mercado.md).                            |
+| Pendiente                                     | Por qué importa                                                                                                                        |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cuenta del equipo de Parkia en producción** | Se crea una sola vez con el comando de [despliegue.md](despliegue.md#personal); desde ahí se da de alta todo lo demás en los paneles.  |
+| **Textos que prometen de más**                | El ingreso dice «Te avisamos antes de que venza», pero los avisos todavía no existen. Hay que implementarlos o quitar la frase.        |
+| **Propuesta comercial**                       | Documento y presentación para la Municipalidad de Firmat (precio, modelo, cronograma del piloto), basados en [mercado.md](mercado.md). |
 
 ### 2. Para el piloto con cobro real en Firmat
 
-| Pendiente                                      | Detalle                                                                                                                                                                             |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Carga de saldo con Mercado Pago**            | Cuenta del municipio conectada por OAuth (la plata va directo al municipio), webhooks, conciliación y reintegros.                                                                   |
-| **Actas de infracción**                        | Foto, ubicación, hash, numeración y estados, con exportación para el Juzgado de Faltas. Necesita ordenanza o convenio que las respalde.                                             |
-| **Avisos al conductor**                        | «Te quedan 10 minutos» por email o notificación web; luego WhatsApp.                                                                                                                |
-| **Exenciones y abonos**                        | Personas con discapacidad, frentistas, vehículos oficiales: el control debe darlos por habilitados.                                                                                 |
-| **Datos reales de Firmat**                     | Cuadras incluidas, numeración, capacidad por mano, lugares numerados y tarifa según la ordenanza. Hoy son valores de demostración.                                                  |
-| **Respaldos fuera del servidor**               | Copia diaria a Cloudflare R2 y prueba mensual. Hoy, si falla el disco de la VPS, se pierden los datos.                                                                              |
-| **Monitoreo**                                  | Aviso externo si se cae el sitio y seguimiento de errores (Sentry).                                                                                                                 |
-| **Aislamiento por municipio en la base (RLS)** | Hoy cada consulta filtra por municipio en el código; con RLS lo garantiza también la base. Imprescindible antes del segundo municipio.                                              |
-| **Recuperación de contraseña y 2FA**           | Hoy una persona que olvida su contraseña depende de que un administrador se la restablezca; falta recuperarla por email (requiere Resend) y un segundo factor para administradores. |
-| **Legales**                                    | Términos y condiciones, política de privacidad y registro de la base de datos personales (Ley 25.326), contrato con el municipio.                                                   |
+| Pendiente                                      | Detalle                                                                                                                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Carga de saldo con Mercado Pago**            | Cuenta del municipio conectada por OAuth (la plata va directo al municipio), webhooks, conciliación y reintegros.                                                 |
+| **Actas de infracción**                        | Foto, ubicación, hash, numeración y estados, con exportación para el Juzgado de Faltas. Necesita ordenanza o convenio que las respalde.                           |
+| **Avisos al conductor**                        | «Te quedan 10 minutos» por email o notificación web; luego WhatsApp.                                                                                              |
+| **Exenciones y abonos**                        | Personas con discapacidad, frentistas, vehículos oficiales: el control debe darlos por habilitados.                                                               |
+| **Datos reales de Firmat**                     | Cuadras incluidas, numeración, capacidad por mano, lugares numerados y tarifa según la ordenanza. Hoy son valores de demostración.                                |
+| **Respaldos fuera del servidor**               | Copia diaria a Cloudflare R2 y prueba mensual. Hoy, si falla el disco de la VPS, se pierden los datos.                                                            |
+| **Monitoreo**                                  | Aviso externo si se cae el sitio y seguimiento de errores (Sentry).                                                                                               |
+| **Aislamiento por municipio en la base (RLS)** | Hoy cada consulta filtra por municipio en el código; con RLS lo garantiza también la base. Imprescindible antes del segundo municipio.                            |
+| **Recuperación de contraseña y 2FA**           | Hoy una persona que olvida su contraseña depende de que un administrador se la restablezca; falta recuperarla por email y un segundo factor para administradores. |
+| **Legales**                                    | Términos y condiciones, política de privacidad y registro de la base de datos personales (Ley 25.326), contrato con el municipio.                                 |
 
 ### 3. Después del piloto
 

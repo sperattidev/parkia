@@ -85,6 +85,17 @@ pk logs api | grep 'código'   # en demo: códigos de acceso enviados por consol
 pk restart web
 ```
 
+### Emails (Resend)
+
+Los emails salen por [Resend](https://resend.com) desde `no-responder@parkia.net.ar`. El dominio está verificado con registros en Cloudflare: DKIM (`resend._domainkey`), SPF y retorno (`send` y `rsend`, en _DNS only_) y DMARC (`_dmarc`). En `/opt/parkia/.env`:
+
+```bash
+CORREO_PROVEEDOR=resend
+RESEND_API_KEY=re_…   # clave con permiso «Sending access» solo para parkia.net.ar; se carga directo en la VPS
+```
+
+Después de cambiarlos: `pk up -d --wait api`. Los envíos y rebotes se ven en el panel de Resend (**Emails** y **Logs**).
+
 ### Personal
 
 Todo el personal ingresa en `app.parkia.net.ar/personal/ingresar` y Parkia lo lleva a su panel según el rol. **Las altas del día a día se hacen desde los paneles**: el equipo de Parkia da de alta cada municipio con su primer administrador (`/plataforma`), y ese administrador suma a su personal desde el panel municipal. Los dos generan una contraseña temporal que la persona cambia al ingresar.

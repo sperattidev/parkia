@@ -22,6 +22,7 @@ export class CorreoResend extends Correo {
         to: [mensaje.para],
         subject: mensaje.asunto,
         text: mensaje.texto,
+        ...(mensaje.html && { html: mensaje.html }),
       }),
       signal: AbortSignal.timeout(10_000),
     });

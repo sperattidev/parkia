@@ -20,6 +20,17 @@ describe('CorreoResend', () => {
     });
   });
 
+  it('envía también la versión HTML cuando la hay', async () => {
+    const fetchFalso = vi.fn(() => Promise.resolve(new Response('{"id":"1"}', { status: 200 })));
+    await new CorreoResend('re_clave', 'x', fetchFalso).enviar({ ...mensaje, html: '<p>Hola</p>' });
+
+    const [, opciones] = fetchFalso.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(opciones.body as string)).toMatchObject({
+      text: 'Tu código: 123456',
+      html: '<p>Hola</p>',
+    });
+  });
+
   it('falla si Resend rechaza el envío', async () => {
     const fetchFalso = vi.fn(() =>
       Promise.resolve(new Response('dominio no verificado', { status: 403 })),

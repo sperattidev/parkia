@@ -6,6 +6,7 @@ import { and, desc, eq, gt, isNull, ne, sql } from 'drizzle-orm';
 import { ErrorDeApi } from '../comun/errores.js';
 import type { Entorno } from '../config/entorno.js';
 import { Correo } from '../correo/correo.js';
+import { correoDeCodigo } from '../correo/plantillas.js';
 import type { Conexion } from '../db/conexion.js';
 import { CONEXION } from '../db/db.module.js';
 import { codigosDeAcceso, membresias, municipios, sesiones, usuarios } from '../db/esquema.js';
@@ -91,15 +92,7 @@ export class AutenticacionService {
       });
     });
 
-    await this.correo.enviar({
-      para: email,
-      asunto: `Tu código de Parkia: ${codigo}`,
-      texto: [
-        `Tu código para ingresar a Parkia es: ${codigo}`,
-        '',
-        `Vence en ${VIGENCIA_CODIGO / MINUTO} minutos. Si no lo pediste, ignorá este mensaje.`,
-      ].join('\n'),
-    });
+    await this.correo.enviar(correoDeCodigo(email, codigo, VIGENCIA_CODIGO / MINUTO));
   }
 
   async ingresarConCodigo(
