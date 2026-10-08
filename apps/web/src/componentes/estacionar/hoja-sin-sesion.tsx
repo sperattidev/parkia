@@ -1,4 +1,4 @@
-import type { MunicipioPublico, ZonasGeoJson } from '@parkia/contracts';
+import type { MunicipioPublico, ZonaResumen } from '@parkia/contracts';
 import { BellRing, Coins, Smartphone, type LucideIcon } from 'lucide-react';
 import type { Route } from 'next';
 import Link from 'next/link';
@@ -13,12 +13,12 @@ const BENEFICIOS: readonly { Icono: LucideIcon; texto: string }[] = [
 
 export function HojaSinSesion({
   municipio,
-  zonas,
+  zona,
 }: {
   municipio: MunicipioPublico;
-  zonas: ZonasGeoJson;
+  /** Zona de la cuadra tocada o, si no, la primera del municipio. */
+  zona: ZonaResumen | undefined;
 }) {
-  const [zona] = zonas.features;
   return (
     <div className="space-y-5">
       <div>
@@ -41,7 +41,19 @@ export function HojaSinSesion({
         ))}
       </ul>
 
-      {zona && <TarifaDeZona zona={zona} />}
+      {zona && (
+        <div className="space-y-2">
+          <p className="flex items-center gap-2 text-sm font-bold">
+            <span
+              className="size-2.5 rounded-full"
+              style={{ backgroundColor: zona.color }}
+              aria-hidden
+            />
+            {zona.nombre}
+          </p>
+          <TarifaDeZona zona={zona} />
+        </div>
+      )}
 
       <Link
         href={`/ingresar?volver=/${municipio.slug}` as Route}

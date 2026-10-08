@@ -85,6 +85,7 @@ export function HojaEnCurso({
   const cliente = useQueryClient();
   const [confirmando, setConfirmando] = useState(false);
   const zh = municipio.zonaHoraria;
+  const { ubicacion } = estacionamiento;
 
   const inicio = new Date(estacionamiento.inicio).getTime();
   const vence = new Date(estacionamiento.venceEn).getTime();
@@ -122,9 +123,17 @@ export function HojaEnCurso({
           <p className="text-xs font-bold tracking-wider text-tinta-tenue uppercase">
             Estacionado en
           </p>
-          <h1 className="mt-0.5 text-2xl leading-tight font-extrabold tracking-tight">
-            {estacionamiento.zona.nombre}
+          <h1 className="cifras mt-0.5 text-2xl leading-tight font-extrabold tracking-tight">
+            {ubicacion
+              ? `${ubicacion.calle} ${String(ubicacion.altura)}`
+              : estacionamiento.zona.nombre}
           </h1>
+          {ubicacion && (
+            <p className="mt-1 text-sm font-semibold text-tinta-suave">
+              {estacionamiento.zona.nombre} · mano {ubicacion.lado}
+              {ubicacion.lugar !== null && ` · lugar ${String(ubicacion.lugar)}`}
+            </p>
+          )}
         </div>
         {vencido ? (
           <Etiqueta tono="peligro">Saldo agotado</Etiqueta>

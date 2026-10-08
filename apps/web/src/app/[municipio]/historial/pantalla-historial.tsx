@@ -84,7 +84,15 @@ export function PantallaHistorial({ municipio }: { municipio: MunicipioPublico }
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[0.95rem] font-bold">
-                        {estacionamiento.zona.nombre}
+                        {estacionamiento.ubicacion
+                          ? `${estacionamiento.ubicacion.calle} ${String(estacionamiento.ubicacion.altura)}`
+                          : estacionamiento.zona.nombre}
+                        {estacionamiento.ubicacion && (
+                          <span className="font-semibold text-tinta-tenue">
+                            {' '}
+                            · {estacionamiento.zona.nombre}
+                          </span>
+                        )}
                       </p>
                       <p className="cifras truncate text-xs text-tinta-tenue">
                         <span className="font-mono font-semibold tracking-wider text-tinta-suave">

@@ -1,14 +1,12 @@
-import type { ZonasGeoJson } from '@parkia/contracts';
+import type { ZonaResumen } from '@parkia/contracts';
 import { Clock } from 'lucide-react';
 
 import { Etiqueta } from '@/componentes/ui';
 import { pesosRedondos } from '@/lib/formato';
 
-type Zona = ZonasGeoJson['features'][number];
-
 /** Precio y horario de la zona: lo primero que el conductor quiere saber. */
-export function TarifaDeZona({ zona }: { zona: Zona }) {
-  const { tarifa } = zona.properties;
+export function TarifaDeZona({ zona }: { zona: ZonaResumen }) {
+  const { tarifa } = zona;
   return (
     <div className="flex items-start gap-3 rounded-control bg-superficie-2 px-4 py-3">
       <Clock className="mt-0.5 size-4 shrink-0 text-tinta-suave" aria-hidden />
@@ -20,8 +18,8 @@ export function TarifaDeZona({ zona }: { zona: Zona }) {
   );
 }
 
-export function EstadoDeCobro({ zona }: { zona: Zona }) {
-  return zona.properties.enHorarioDeCobro ? (
+export function EstadoDeCobro({ zona }: { zona: ZonaResumen }) {
+  return zona.enHorarioDeCobro ? (
     <Etiqueta tono="marca" punto>
       Se cobra ahora
     </Etiqueta>

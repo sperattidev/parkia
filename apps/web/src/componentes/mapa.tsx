@@ -1,12 +1,12 @@
 'use client';
 
-import type { ZonasGeoJson } from '@parkia/contracts';
-import type { ExpressionSpecification, Map as MapaMapLibre } from 'maplibre-gl';
+import type { Mapa as MapaDeCuadras } from '@parkia/contracts';
+import type { ExpressionSpecification, GeoJSONSource, Map as MapaMapLibre } from 'maplibre-gl';
 import { useEffect, useEffectEvent, useRef, useSyncExternalStore } from 'react';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import { limites } from '@/lib/geo';
+import { limites, rotulosDeZonas } from '@/lib/geo';
 
 const ESTILOS = {
   claro: process.env.NEXT_PUBLIC_ESTILO_MAPA ?? 'https://tiles.openfreemap.org/styles/positron',
@@ -44,51 +44,103 @@ export interface Ubicacion {
   readonly lng: number;
 }
 
-function agregarZonas(mapa: MapaMapLibre, zonas: ZonasGeoJson, oscuro: boolean) {
-  if (mapa.getSource('zonas')) return;
-  // MapLibre solo admite ids numéricos en el estado de las geometrías: se
-  // promueve el uuid desde las propiedades.
-  mapa.addSource('zonas', {
-    type: 'geojson',
-    data: {
-      ...zonas,
-      features: zonas.features.map((zona) => ({
-        ...zona,
-        properties: { ...zona.properties, id: zona.id },
-      })),
-    },
-    promoteId: 'id',
-  });
-  const seleccionada: ExpressionSpecification = [
-    'boolean',
-    ['feature-state', 'seleccionada'],
-    false,
+const HALO = { claro: '#ffffff', oscuro: '#0a1020' };
+
+const seleccionada: ExpressionSpecification = ['boolean', ['feature-state', 'seleccionada'], false];
+
+/**
+ * Grosor según el zoom (finita de lejos, ancha como la calzada de cerca) y,
+ * opcionalmente, según esté seleccionada. MapLibre exige que `zoom` quede en
+ * la interpolación de primer nivel.
+ */
+function grosor(
+  [lejos, cerca]: readonly [number, number],
+  [lejosElegida, cercaElegida]: readonly [number, number] = [lejos, cerca],
+): ExpressionSpecification {
+  return [
+    'interpolate',
+    ['exponential', 1.6],
+    ['zoom'],
+    13,
+    ['case', seleccionada, lejosElegida, lejos],
+    18,
+    ['case', seleccionada, cercaElegida, cerca],
   ];
+}
+
+/**
+ * MapLibre solo admite ids numéricos en el estado de las geometrías: se
+ * promueve el uuid desde las propiedades.
+ */
+function datosDeCuadras(datos: MapaDeCuadras) {
+  return {
+    ...datos.cuadras,
+    features: datos.cuadras.features.map((cuadra) => ({
+      ...cuadra,
+      properties: { ...cuadra.properties, id: cuadra.id },
+    })),
+  };
+}
+
+function agregarCuadras(mapa: MapaMapLibre, datos: MapaDeCuadras, oscuro: boolean) {
+  if (mapa.getSource('cuadras')) return;
+  const halo = oscuro ? HALO.oscuro : HALO.claro;
+  mapa.addSource('cuadras', { type: 'geojson', data: datosDeCuadras(datos), promoteId: 'id' });
+  mapa.addSource('zonas-rotulos', { type: 'geojson', data: rotulosDeZonas(datos) });
+
+  const linea = { 'line-cap': 'round', 'line-join': 'round' } as const;
   mapa.addLayer({
-    id: 'zonas-relleno',
-    type: 'fill',
-    source: 'zonas',
+    id: 'cuadras-halo',
+    type: 'line',
+    source: 'cuadras',
+    layout: linea,
     paint: {
-      'fill-color': ['get', 'color'],
-      'fill-opacity': ['case', seleccionada, oscuro ? 0.32 : 0.2, oscuro ? 0.2 : 0.12],
+      'line-color': ['case', seleccionada, ['get', 'color'], halo],
+      'line-width': grosor([5, 18], [10, 30]),
+      'line-opacity': ['case', seleccionada, 0.3, 0.95],
     },
   });
   mapa.addLayer({
-    id: 'zonas-halo',
+    id: 'cuadras-linea',
     type: 'line',
-    source: 'zonas',
-    paint: { 'line-color': oscuro ? '#0a1020' : '#ffffff', 'line-width': 6, 'line-opacity': 0.9 },
+    source: 'cuadras',
+    layout: linea,
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': grosor([2.5, 10], [5, 16]),
+      'line-opacity': ['case', seleccionada, 1, oscuro ? 0.85 : 0.75],
+    },
+  });
+  // Área de toque generosa e invisible: un dedo no acierta a una línea de 3 px.
+  mapa.addLayer({
+    id: 'cuadras-toque',
+    type: 'line',
+    source: 'cuadras',
+    paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': grosor([18, 36]) },
   });
   mapa.addLayer({
-    id: 'zonas-borde',
-    type: 'line',
-    source: 'zonas',
-    paint: { 'line-color': ['get', 'color'], 'line-width': ['case', seleccionada, 3, 2.25] },
+    id: 'cuadras-calle',
+    type: 'symbol',
+    source: 'cuadras',
+    minzoom: 15.5,
+    layout: {
+      'symbol-placement': 'line-center',
+      'text-field': ['get', 'calle'],
+      'text-size': 11,
+      'text-font': ['Noto Sans Bold'],
+      'text-max-angle': 30,
+    },
+    paint: {
+      'text-color': oscuro ? '#e6ebf5' : '#1d2433',
+      'text-halo-color': halo,
+      'text-halo-width': 1.6,
+    },
   });
   mapa.addLayer({
     id: 'zonas-nombre',
     type: 'symbol',
-    source: 'zonas',
+    source: 'zonas-rotulos',
+    maxzoom: 16,
     layout: {
       'text-field': ['upcase', ['get', 'nombre']],
       'text-size': 12,
@@ -97,36 +149,42 @@ function agregarZonas(mapa: MapaMapLibre, zonas: ZonasGeoJson, oscuro: boolean) 
     },
     paint: {
       'text-color': ['get', 'color'],
-      'text-halo-color': oscuro ? '#0a1020' : '#ffffff',
+      'text-halo-color': halo,
       'text-halo-width': 2,
     },
   });
 }
 
 /**
- * Mapa con las zonas tarifadas y la ubicación del usuario. MapLibre se carga
+ * Mapa con las cuadras tarifadas (coloreadas por zona) y la ubicación del
+ * usuario; tocar una cuadra la elige. MapLibre se carga
  * solo en el navegador (necesita WebGL) y en su propio fragmento de código.
  */
 export function Mapa({
-  zonas,
-  zonaSeleccionada,
+  mapa,
+  cuadraSeleccionada,
   alUbicar,
+  alTocarCuadra,
   className,
 }: {
-  zonas: ZonasGeoJson;
-  zonaSeleccionada?: string | undefined;
+  mapa: MapaDeCuadras;
+  cuadraSeleccionada?: string | undefined;
   alUbicar?: (ubicacion: Ubicacion) => void;
+  alTocarCuadra?: (cuadraId: string) => void;
   className?: string;
 }) {
   const contenedorRef = useRef<HTMLDivElement>(null);
   const mapaRef = useRef<MapaMapLibre | null>(null);
   const oscuro = useTemaOscuro();
   const notificarUbicacion = useEffectEvent((ubicacion: Ubicacion) => alUbicar?.(ubicacion));
-  const marcarSeleccion = useEffectEvent((mapa: MapaMapLibre) => {
-    for (const zona of zonas.features) {
-      mapa.setFeatureState(
-        { source: 'zonas', id: zona.id },
-        { seleccionada: zona.id === zonaSeleccionada },
+  const notificarToque = useEffectEvent((cuadraId: string) => alTocarCuadra?.(cuadraId));
+  // El mapa se crea una vez por tema; los datos nuevos (ocupación) se aplican en el lugar.
+  const datosActuales = useEffectEvent(() => mapa);
+  const marcarSeleccion = useEffectEvent((instancia: MapaMapLibre) => {
+    for (const cuadra of mapa.cuadras.features) {
+      instancia.setFeatureState(
+        { source: 'cuadras', id: cuadra.id },
+        { seleccionada: cuadra.id === cuadraSeleccionada },
       );
     }
   });
@@ -140,7 +198,7 @@ export function Mapa({
       // Worker copiado a public/vendor (ver scripts/copiar-worker-mapa.mjs).
       maplibre.setWorkerUrl(`/vendor/maplibre-gl-worker.mjs?v=${maplibre.getVersion()}`);
 
-      const recuadro = limites(zonas);
+      const recuadro = limites(datosActuales());
       const instancia = new Map({
         container: contenedorRef.current,
         style: oscuro ? ESTILOS.oscuro : ESTILOS.claro,
@@ -167,8 +225,18 @@ export function Mapa({
 
       // Se ejecuta en cada carga de estilo (también al cambiar de tema).
       instancia.on('style.load', () => {
-        agregarZonas(instancia, zonas, oscuro);
+        agregarCuadras(instancia, datosActuales(), oscuro);
         marcarSeleccion(instancia);
+      });
+      instancia.on('click', 'cuadras-toque', (evento) => {
+        const id = evento.features?.[0]?.properties.id as unknown;
+        if (typeof id === 'string') notificarToque(id);
+      });
+      instancia.on('mouseenter', 'cuadras-toque', () => {
+        instancia.getCanvas().style.cursor = 'pointer';
+      });
+      instancia.on('mouseleave', 'cuadras-toque', () => {
+        instancia.getCanvas().style.cursor = '';
       });
       instancia.once('load', () => {
         // Pide la ubicación al abrir: es lo que el conductor necesita para estacionar.
@@ -181,18 +249,25 @@ export function Mapa({
       mapaRef.current?.remove();
       mapaRef.current = null;
     };
-  }, [zonas, oscuro]);
+  }, [oscuro]);
+
+  useEffect(() => {
+    const fuente = mapaRef.current?.getSource<GeoJSONSource>('cuadras');
+    if (!fuente || !mapaRef.current) return;
+    void fuente.setData(datosDeCuadras(mapa));
+    marcarSeleccion(mapaRef.current);
+  }, [mapa]);
 
   useEffect(() => {
     const instancia = mapaRef.current;
     if (instancia?.isStyleLoaded()) marcarSeleccion(instancia);
-  }, [zonaSeleccionada]);
+  }, [cuadraSeleccionada]);
 
   return (
     <div
       ref={contenedorRef}
       role="region"
-      aria-label="Mapa de zonas de estacionamiento medido"
+      aria-label="Mapa de cuadras con estacionamiento medido"
       className={className}
     />
   );

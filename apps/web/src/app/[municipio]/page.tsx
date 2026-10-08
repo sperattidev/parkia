@@ -1,4 +1,4 @@
-import type { ZonasGeoJson } from '@parkia/contracts';
+import type { Mapa } from '@parkia/contracts';
 import { notFound } from 'next/navigation';
 
 import { PantallaEstacionar } from '@/componentes/estacionar/pantalla-estacionar';
@@ -11,11 +11,11 @@ export default async function Estacionar({ params }: PageProps<'/[municipio]'>) 
   const municipio = await municipioPorSlug(slug);
   if (!municipio) notFound();
 
-  const [zonas, token] = await Promise.all([
-    obtenerDeLaApi<ZonasGeoJson>(`/v1/municipios/${municipio.slug}/zonas`),
+  const [mapa, token] = await Promise.all([
+    obtenerDeLaApi<Mapa>(`/v1/municipios/${municipio.slug}/mapa`),
     tokenDeSesion(),
   ]);
-  if (!zonas) notFound();
+  if (!mapa) notFound();
 
-  return <PantallaEstacionar municipio={municipio} zonas={zonas} haySesion={Boolean(token)} />;
+  return <PantallaEstacionar municipio={municipio} mapa={mapa} haySesion={Boolean(token)} />;
 }

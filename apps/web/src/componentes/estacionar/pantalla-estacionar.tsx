@@ -1,6 +1,7 @@
 'use client';
 
-import type { MunicipioPublico, ZonasGeoJson } from '@parkia/contracts';
+import type { Mapa as MapaDeCuadras, MunicipioPublico } from '@parkia/contracts';
+import type { Lado } from '@parkia/domain';
 import { Wallet } from 'lucide-react';
 import type { Route } from 'next';
 import Link from 'next/link';
@@ -9,11 +10,10 @@ import { useState, type ReactNode } from 'react';
 import { Isotipo } from '@/componentes/marca';
 import { Mapa, type Ubicacion } from '@/componentes/mapa';
 import { Esqueleto } from '@/componentes/ui';
-import { zonaEnUbicacion } from '@/lib/geo';
-import { useBilletera, useEstacionamientoActivo } from '@/lib/hooks';
+import { useBilletera, useEstacionamientoActivo, useUbicacionEnCuadra } from '@/lib/hooks';
 
 import { HojaEnCurso } from './hoja-en-curso';
-import { HojaNueva } from './hoja-nueva';
+import { HojaNueva, type Eleccion } from './hoja-nueva';
 import { HojaSinSesion } from './hoja-sin-sesion';
 
 /** Contenedor de la hoja: inferior en el celular, panel lateral en escritorio. */
@@ -77,32 +77,58 @@ function HojaCargando() {
   );
 }
 
+/** Primera mano donde se puede estacionar. */
+function manoHabilitada(lugares: Record<Lado, number>): Lado {
+  return lugares.par > 0 || lugares.impar === 0 ? 'par' : 'impar';
+}
+
 export function PantallaEstacionar({
   municipio,
-  zonas,
+  mapa,
   haySesion,
 }: {
   municipio: MunicipioPublico;
-  zonas: ZonasGeoJson;
+  mapa: MapaDeCuadras;
   haySesion: boolean;
 }) {
   const [ubicacion, setUbicacion] = useState<Ubicacion>();
-  const [zonaElegida, setZonaElegida] = useState(
-    zonas.features.length === 1 ? zonas.features[0]?.id : undefined,
-  );
+  // Lo que el conductor eligió a mano prevalece sobre lo detectado por GPS.
+  const [cuadraTocada, setCuadraTocada] = useState<string>();
+  const [ladoElegido, setLadoElegido] = useState<{ cuadraId: string; lado: Lado }>();
   const activo = useEstacionamientoActivo(municipio.slug, haySesion);
+  const detectada = useUbicacionEnCuadra(municipio.slug, ubicacion);
 
-  const zonaDetectada = ubicacion ? zonaEnUbicacion(zonas, ubicacion) : undefined;
-  const zonaActual = zonaDetectada?.id ?? zonaElegida;
+  const posicion = detectada.data ?? undefined;
+  const cuadraId = cuadraTocada ?? posicion?.cuadra.id;
+  const cuadra = mapa.cuadras.features.find((c) => c.id === cuadraId);
+  const zona = mapa.zonas.find((z) => z.id === cuadra?.properties.zonaId);
+
+  let eleccion: Eleccion | undefined;
+  if (cuadra && zona) {
+    const enEsaCuadra = posicion?.cuadra.id === cuadra.id ? posicion : undefined;
+    const lado =
+      (ladoElegido?.cuadraId === cuadra.id ? ladoElegido.lado : undefined) ??
+      enEsaCuadra?.lado ??
+      manoHabilitada(cuadra.properties.lugares);
+    eleccion = {
+      cuadra,
+      zona,
+      lado,
+      // La altura del GPS solo vale si es la misma mano; si no, la API usa la mitad de la cuadra.
+      altura: enEsaCuadra?.lado === lado ? enEsaCuadra.altura : undefined,
+      detectada: Boolean(enEsaCuadra),
+    };
+  }
 
   return (
     <div className="relative h-full overflow-hidden">
       {/* MapLibre fuerza position: relative en su contenedor: el posicionamiento va afuera. */}
       <div className="absolute inset-0">
         <Mapa
-          zonas={zonas}
-          zonaSeleccionada={activo.data?.zona.id ?? zonaActual}
+          mapa={mapa}
+          cuadraSeleccionada={activo.data?.ubicacion?.cuadraId ?? cuadraId}
           alUbicar={setUbicacion}
+          alTocarCuadra={setCuadraTocada}
           className="size-full"
         />
       </div>
@@ -111,7 +137,7 @@ export function PantallaEstacionar({
 
       <Hoja>
         {!haySesion ? (
-          <HojaSinSesion municipio={municipio} zonas={zonas} />
+          <HojaSinSesion municipio={municipio} zona={zona ?? mapa.zonas[0]} />
         ) : activo.isPending ? (
           <HojaCargando />
         ) : activo.data ? (
@@ -119,11 +145,19 @@ export function PantallaEstacionar({
         ) : (
           <HojaNueva
             municipio={municipio}
-            zonas={zonas}
-            zonaId={zonaActual}
-            alElegirZona={setZonaElegida}
-            detectada={Boolean(zonaDetectada)}
-            fueraDeZona={Boolean(ubicacion) && !zonaDetectada}
+            eleccion={eleccion}
+            alElegirLado={(lado) => {
+              if (cuadra) setLadoElegido({ cuadraId: cuadra.id, lado });
+            }}
+            {...(posicion &&
+              cuadraTocada &&
+              cuadraTocada !== posicion.cuadra.id && {
+                alUsarUbicacion: () => {
+                  setCuadraTocada(undefined);
+                },
+              })}
+            buscando={detectada.isFetching && !posicion}
+            fueraDeZona={detectada.data === null && !cuadraTocada}
           />
         )}
       </Hoja>
