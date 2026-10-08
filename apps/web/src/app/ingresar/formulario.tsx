@@ -2,9 +2,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Mail, MailCheck } from 'lucide-react';
-import type { Route } from 'next';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { CampoCodigo } from '@/componentes/campo-codigo';
@@ -12,10 +10,12 @@ import { Boton, CampoDeTexto, Tarjeta } from '@/componentes/ui';
 import { mensajeDeError, pedir } from '@/lib/cliente';
 
 export function FormularioDeIngreso({ volver }: { volver: string }) {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [codigo, setCodigo] = useState('');
   const [paso, setPaso] = useState<'email' | 'codigo'>('email');
+  // Un código se envía una sola vez: el autocompletado y el botón no pueden duplicarlo.
+  const enviandoRef = useRef(false);
+  const [ingresado, setIngresado] = useState(false);
 
   const enviarCodigo = useMutation({
     mutationFn: () => pedir('/api/codigo', { metodo: 'POST', cuerpo: { email } }),
@@ -29,14 +29,23 @@ export function FormularioDeIngreso({ volver }: { volver: string }) {
     mutationFn: (valor: string) =>
       pedir('/api/sesion', { metodo: 'POST', cuerpo: { email, codigo: valor } }),
     onSuccess: () => {
-      router.replace(volver as Route);
-      router.refresh();
+      setIngresado(true);
+      // Navegación completa: el servidor dibuja el destino ya con la cookie de sesión.
+      window.location.replace(volver);
     },
     onError: (error) => {
+      enviandoRef.current = false;
       setCodigo('');
       toast.error(mensajeDeError(error));
     },
   });
+
+  const ingresarUnaVez = (valor: string) => {
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    ingresar.mutate(valor);
+  };
+  const ocupado = ingresar.isPending || ingresado;
 
   if (paso === 'email') {
     return (
@@ -85,7 +94,7 @@ export function FormularioDeIngreso({ volver }: { volver: string }) {
         className="space-y-6"
         onSubmit={(evento) => {
           evento.preventDefault();
-          ingresar.mutate(codigo);
+          ingresarUnaVez(codigo);
         }}
       >
         <div>
@@ -101,19 +110,17 @@ export function FormularioDeIngreso({ volver }: { volver: string }) {
         <CampoCodigo
           valor={codigo}
           alCambiar={setCodigo}
-          deshabilitado={ingresar.isPending}
-          alCompletar={(valor) => {
-            ingresar.mutate(valor);
-          }}
+          deshabilitado={ocupado}
+          alCompletar={ingresarUnaVez}
         />
         <Boton
           type="submit"
           tamano="grande"
           className="w-full"
-          disabled={codigo.length !== 6}
-          cargando={ingresar.isPending}
+          disabled={codigo.length !== 6 || ocupado}
+          cargando={ocupado}
         >
-          Ingresar
+          {ingresado ? 'Entrando…' : 'Ingresar'}
         </Boton>
         <div className="flex items-center justify-between text-sm">
           <button

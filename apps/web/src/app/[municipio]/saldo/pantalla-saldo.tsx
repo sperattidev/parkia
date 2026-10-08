@@ -3,7 +3,6 @@
 import type { Billetera, MunicipioPublico, Usuario } from '@parkia/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownLeft, CarFront, LogOut, Plus, ReceiptText, UserRound } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -199,15 +198,14 @@ function Movimientos({
 }
 
 function Cuenta({ municipio }: { municipio: MunicipioPublico }) {
-  const router = useRouter();
   const cliente = useQueryClient();
   const yo = useQuery({ queryKey: ['yo'], queryFn: () => api<Usuario>('auth/yo') });
   const salir = useMutation({
     mutationFn: () => pedir('/api/sesion', { metodo: 'DELETE' }),
     onSuccess: () => {
       cliente.clear();
-      router.replace(`/${municipio.slug}`);
-      router.refresh();
+      // Navegación completa: ningún dato de la sesión queda en memoria del navegador.
+      window.location.replace(`/${municipio.slug}`);
     },
   });
 
