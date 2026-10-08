@@ -47,6 +47,28 @@ export interface Ubicacion {
 const HALO = { claro: '#ffffff', oscuro: '#0a1020' };
 
 const seleccionada: ExpressionSpecification = ['boolean', ['feature-state', 'seleccionada'], false];
+const atenuada: ExpressionSpecification = ['boolean', ['feature-state', 'atenuada'], false];
+
+/** Punto destacado sobre el mapa (por ejemplo, un vehículo vencido en el radar del agente). */
+export interface Aviso {
+  readonly id: string;
+  /** `[lng, lat]` */
+  readonly posicion: readonly [number, number];
+  readonly tono: 'peligro' | 'alerta';
+}
+
+const TONOS_DE_AVISO = { peligro: '#e02d3c', alerta: '#f59e0b' } as const;
+
+function datosDeAvisos(avisos: readonly Aviso[]) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: avisos.map((aviso) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [...aviso.posicion] },
+      properties: { id: aviso.id, color: TONOS_DE_AVISO[aviso.tono] },
+    })),
+  };
+}
 
 /**
  * Grosor según el zoom (finita de lejos, ancha como la calzada de cerca) y,
@@ -108,7 +130,7 @@ function agregarCuadras(mapa: MapaMapLibre, datos: MapaDeCuadras, oscuro: boolea
     paint: {
       'line-color': ['get', 'color'],
       'line-width': grosor([2.5, 10], [5, 16]),
-      'line-opacity': ['case', seleccionada, 1, oscuro ? 0.85 : 0.75],
+      'line-opacity': ['case', seleccionada, 1, atenuada, 0.3, oscuro ? 0.85 : 0.75],
     },
   });
   // Área de toque generosa e invisible: un dedo no acierta a una línea de 3 px.
@@ -134,6 +156,28 @@ function agregarCuadras(mapa: MapaMapLibre, datos: MapaDeCuadras, oscuro: boolea
       'text-color': oscuro ? '#e6ebf5' : '#1d2433',
       'text-halo-color': halo,
       'text-halo-width': 1.6,
+    },
+  });
+  mapa.addSource('avisos', { type: 'geojson', data: datosDeAvisos([]) });
+  mapa.addLayer({
+    id: 'avisos-halo',
+    type: 'circle',
+    source: 'avisos',
+    paint: {
+      'circle-color': ['get', 'color'],
+      'circle-opacity': 0.25,
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 8, 18, 18],
+    },
+  });
+  mapa.addLayer({
+    id: 'avisos-punto',
+    type: 'circle',
+    source: 'avisos',
+    paint: {
+      'circle-color': ['get', 'color'],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 4, 18, 8],
+      'circle-stroke-color': halo,
+      'circle-stroke-width': 2,
     },
   });
   mapa.addLayer({
@@ -163,12 +207,17 @@ function agregarCuadras(mapa: MapaMapLibre, datos: MapaDeCuadras, oscuro: boolea
 export function Mapa({
   mapa,
   cuadraSeleccionada,
+  atenuadas,
+  avisos,
   alUbicar,
   alTocarCuadra,
   className,
 }: {
   mapa: MapaDeCuadras;
   cuadraSeleccionada?: string | undefined;
+  /** Cuadras que se dibujan tenues (por ejemplo, las que nadie controló hoy). */
+  atenuadas?: ReadonlySet<string> | undefined;
+  avisos?: readonly Aviso[] | undefined;
   alUbicar?: (ubicacion: Ubicacion) => void;
   alTocarCuadra?: (cuadraId: string) => void;
   className?: string;
@@ -184,9 +233,13 @@ export function Mapa({
     for (const cuadra of mapa.cuadras.features) {
       instancia.setFeatureState(
         { source: 'cuadras', id: cuadra.id },
-        { seleccionada: cuadra.id === cuadraSeleccionada },
+        {
+          seleccionada: cuadra.id === cuadraSeleccionada,
+          atenuada: atenuadas?.has(cuadra.id) ?? false,
+        },
       );
     }
+    void instancia.getSource<GeoJSONSource>('avisos')?.setData(datosDeAvisos(avisos ?? []));
   });
 
   useEffect(() => {
@@ -239,7 +292,7 @@ export function Mapa({
         instancia.getCanvas().style.cursor = '';
       });
       instancia.once('load', () => {
-        // Pide la ubicación al abrir: es lo que el conductor necesita para estacionar.
+        // Pide la ubicación al abrir: es lo primero que se necesita para estacionar o controlar.
         geolocalizar.trigger();
       });
     });
@@ -260,8 +313,9 @@ export function Mapa({
 
   useEffect(() => {
     const instancia = mapaRef.current;
-    if (instancia?.isStyleLoaded()) marcarSeleccion(instancia);
-  }, [cuadraSeleccionada]);
+    // No se usa isStyleLoaded(): da falso mientras cargan las teselas del fondo.
+    if (instancia?.getSource('cuadras')) marcarSeleccion(instancia);
+  }, [cuadraSeleccionada, atenuadas, avisos]);
 
   return (
     <div

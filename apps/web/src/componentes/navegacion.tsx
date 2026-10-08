@@ -7,24 +7,41 @@ import { usePathname } from 'next/navigation';
 
 import { cn } from '@/lib/cn';
 
-const SECCIONES: readonly { sufijo: string; texto: string; Icono: LucideIcon }[] = [
+export interface Seccion {
+  readonly sufijo: string;
+  readonly texto: string;
+  readonly Icono: LucideIcon;
+}
+
+const SECCIONES: readonly Seccion[] = [
   { sufijo: '', texto: 'Estacionar', Icono: MapPin },
   { sufijo: '/saldo', texto: 'Saldo', Icono: Wallet },
   { sufijo: '/vehiculos', texto: 'Vehículos', Icono: Car },
   { sufijo: '/historial', texto: 'Historial', Icono: History },
 ];
 
-function useSecciones(municipio: string) {
+function useSecciones(base: string, secciones: readonly Seccion[]) {
   const ruta = usePathname();
-  return SECCIONES.map((seccion) => {
-    const destino = `/${municipio}${seccion.sufijo}`;
+  return secciones.map((seccion) => {
+    const destino = `${base}${seccion.sufijo}`;
     return { ...seccion, destino: destino as Route, activa: ruta === destino };
   });
 }
 
-/** Barra de pestañas inferior (celular). */
-export function NavegacionInferior({ municipio }: { municipio: string }) {
-  const secciones = useSecciones(municipio);
+/**
+ * Barra de pestañas inferior (celular). Sin `secciones`, las del conductor;
+ * `base` es la ruta a la que se agrega el sufijo de cada sección.
+ */
+export function NavegacionInferior({
+  municipio,
+  base = `/${municipio}`,
+  secciones: propias = SECCIONES,
+}: {
+  municipio: string;
+  base?: string;
+  secciones?: readonly Seccion[];
+}) {
+  const secciones = useSecciones(base, propias);
   return (
     <nav
       aria-label="Secciones"
@@ -59,8 +76,16 @@ export function NavegacionInferior({ municipio }: { municipio: string }) {
 }
 
 /** Pestañas horizontales de la barra superior (escritorio). */
-export function NavegacionSuperior({ municipio }: { municipio: string }) {
-  const secciones = useSecciones(municipio);
+export function NavegacionSuperior({
+  municipio,
+  base = `/${municipio}`,
+  secciones: propias = SECCIONES,
+}: {
+  municipio: string;
+  base?: string;
+  secciones?: readonly Seccion[];
+}) {
+  const secciones = useSecciones(base, propias);
   return (
     <nav aria-label="Secciones">
       <ul className="flex items-center gap-1">
