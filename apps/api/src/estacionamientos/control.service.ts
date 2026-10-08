@@ -1,24 +1,36 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Control, ResultadoDeControl } from '@parkia/contracts';
-import { estaEnHorarioDeCobro, type Patente } from '@parkia/domain';
-import { and, eq, sql } from 'drizzle-orm';
+import {
+  coincidencia,
+  estaEnHorarioDeCobro,
+  evaluarControl,
+  inicioDelDia,
+  type Patente,
+} from '@parkia/domain';
+import { and, desc, eq, gte, or, sql } from 'drizzle-orm';
 
 import { Reloj } from '../comun/reloj.js';
 import type { Conexion } from '../db/conexion.js';
 import { CONEXION } from '../db/db.module.js';
 import { controles, cuadras, estacionamientos, zonas } from '../db/esquema.js';
-import { MunicipiosService } from '../municipios/municipios.service.js';
-import { ZonasService, type Zona } from '../zonas/zonas.service.js';
+import { MunicipiosService, type Municipio } from '../municipios/municipios.service.js';
+import { RADIO_DE_CONTROL_METROS, ZonasService } from '../zonas/zonas.service.js';
 import { ubicacionDe } from './ubicacion.js';
 
 export interface SolicitudDeControl {
   readonly patente: Patente;
   readonly lat: number;
   readonly lng: number;
+  readonly precisionMetros?: number | undefined;
+  /** Cuadra elegida por el agente: prevalece sobre la detectada por GPS. */
+  readonly cuadraId?: string | undefined;
 }
 
 /** Resultados con los que el vehículo puede permanecer estacionado. */
 const HABILITANTES: ReadonlySet<ResultadoDeControl> = new Set(['habilitado', 'fuera_de_horario']);
+
+/** Un control de la misma patente dentro de esta ventana se informa al agente. */
+const VENTANA_DE_CONTROL_ANTERIOR_MS = 3 * 60 * 60_000;
 
 @Injectable()
 export class ControlService {
@@ -30,8 +42,8 @@ export class ControlService {
   ) {}
 
   /**
-   * Verifica una patente en la ubicación del agente y deja registro del control.
-   * Orden de evaluación: cuadra tarifada → horario de cobro → estacionamiento vigente.
+   * Verifica una patente donde está el agente y deja registro del control.
+   * La decisión es de `evaluarControl` (dominio); acá se reúnen los datos.
    */
   async controlar(
     agenteId: string,
@@ -40,35 +52,28 @@ export class ControlService {
   ): Promise<Control> {
     const ahora = this.reloj.ahora();
     const municipio = await this.municipios.porSlug(slugMunicipio);
-    const posicion = await this.zonas.posicionEn(municipio, solicitud);
-    const cuadra = posicion?.cuadra ?? null;
+
+    const cercanas = await this.zonas.cuadrasCerca(municipio, solicitud, RADIO_DE_CONTROL_METROS);
+    const cuadraId = solicitud.cuadraId ?? cercanas[0]?.id;
+    const cuadra = cuadraId ? await this.zonas.cuadraPorId(municipio, cuadraId) : null;
     const zona = cuadra?.zona ?? null;
+    if (cuadra && !cercanas.some((c) => c.id === cuadra.id)) {
+      // Cuadra elegida a mano lejos del GPS: cuenta como la del agente.
+      cercanas.unshift({ id: cuadra.id, zonaId: cuadra.zona.id, distanciaMetros: Number.NaN });
+    }
 
-    const [enCurso] = await this.conexion.db
-      .select({
-        id: estacionamientos.id,
-        zonaId: estacionamientos.zonaId,
-        zonaNombre: zonas.nombre,
-        inicio: estacionamientos.inicio,
-        venceEn: estacionamientos.venceEn,
-        cuadraId: estacionamientos.cuadraId,
-        lado: estacionamientos.lado,
-        altura: estacionamientos.altura,
-        lugar: estacionamientos.lugar,
-        calle: cuadras.calle,
-      })
-      .from(estacionamientos)
-      .innerJoin(zonas, eq(zonas.id, estacionamientos.zonaId))
-      .leftJoin(cuadras, eq(cuadras.id, estacionamientos.cuadraId))
-      .where(
-        and(
-          eq(estacionamientos.municipioId, municipio.id),
-          eq(estacionamientos.patente, solicitud.patente),
-          eq(estacionamientos.estado, 'activo'),
-        ),
-      );
+    const [ultimo, anterior] = await Promise.all([
+      this.ultimoDeLaJornada(municipio, solicitud.patente, ahora),
+      this.controlAnterior(municipio, solicitud.patente, ahora),
+    ]);
+    const resultado = evaluarControl({
+      zonaId: zona?.id ?? null,
+      enHorarioDeCobro: zona ? estaEnHorarioDeCobro(zona.regla, ahora) : false,
+      cercanas,
+      estacionamiento: ultimo ?? null,
+      ahora,
+    });
 
-    const resultado = this.evaluar(zona, enCurso, ahora);
     const [registro] = await this.conexion.db
       .insert(controles)
       .values({
@@ -77,9 +82,12 @@ export class ControlService {
         patente: solicitud.patente,
         zonaId: zona?.id ?? null,
         cuadraId: cuadra?.id ?? null,
-        estacionamientoId: enCurso?.id ?? null,
+        estacionamientoId: ultimo?.id ?? null,
         ubicacion: sql`ST_SetSRID(ST_MakePoint(${solicitud.lng}, ${solicitud.lat}), 4326)`,
+        precisionMetros:
+          solicitud.precisionMetros === undefined ? null : Math.round(solicitud.precisionMetros),
         resultado,
+        creadoEn: ahora,
       })
       .returning({ id: controles.id, creadoEn: controles.creadoEn });
     if (!registro) throw new Error('No se pudo registrar el control.');
@@ -96,29 +104,77 @@ export class ControlService {
         alturaDesde: cuadra.alturaDesde,
         alturaHasta: cuadra.alturaHasta,
       },
-      estacionamiento: enCurso
+      estacionamiento: ultimo
         ? {
-            id: enCurso.id,
-            zona: { id: enCurso.zonaId, nombre: enCurso.zonaNombre },
-            ubicacion: ubicacionDe(enCurso, enCurso.calle),
-            inicio: enCurso.inicio.toISOString(),
-            venceEn: enCurso.venceEn.toISOString(),
+            id: ultimo.id,
+            zona: { id: ultimo.zonaId, nombre: ultimo.zonaNombre },
+            ubicacion: ubicacionDe(ultimo, ultimo.calle),
+            inicio: ultimo.inicio.toISOString(),
+            venceEn: ultimo.venceEn.toISOString(),
+            estado: ultimo.venceEn <= ahora ? 'vencido' : 'vigente',
+            coincidencia: coincidencia(ultimo.cuadraId, cuadra?.id ?? null, cercanas),
           }
+        : null,
+      controlAnterior: anterior
+        ? { registradoEn: anterior.creadoEn.toISOString(), resultado: anterior.resultado }
         : null,
       registradoEn: registro.creadoEn.toISOString(),
     };
   }
 
-  private evaluar(
-    zona: Zona | null,
-    enCurso: { zonaId: string; venceEn: Date } | undefined,
-    ahora: Date,
-  ): ResultadoDeControl {
-    if (!zona) return 'fuera_de_zona';
-    if (!estaEnHorarioDeCobro(zona.regla, ahora)) return 'fuera_de_horario';
-    if (!enCurso) return 'sin_estacionamiento';
-    if (enCurso.venceEn <= ahora) return 'vencido';
-    if (enCurso.zonaId !== zona.id) return 'otra_zona';
-    return 'habilitado';
+  /**
+   * Estacionamiento que respalda (o respaldó) a la patente hoy: el que está en
+   * curso o, si el último de la jornada terminó por falta de saldo, ese. Si el
+   * conductor lo finalizó, ya no cubre nada y no se devuelve.
+   */
+  private async ultimoDeLaJornada(municipio: Municipio, patente: Patente, ahora: Date) {
+    const [fila] = await this.conexion.db
+      .select({
+        id: estacionamientos.id,
+        zonaId: estacionamientos.zonaId,
+        zonaNombre: zonas.nombre,
+        inicio: estacionamientos.inicio,
+        venceEn: estacionamientos.venceEn,
+        estado: estacionamientos.estado,
+        motivoDeCierre: estacionamientos.motivoDeCierre,
+        cuadraId: estacionamientos.cuadraId,
+        lado: estacionamientos.lado,
+        altura: estacionamientos.altura,
+        lugar: estacionamientos.lugar,
+        calle: cuadras.calle,
+      })
+      .from(estacionamientos)
+      .innerJoin(zonas, eq(zonas.id, estacionamientos.zonaId))
+      .leftJoin(cuadras, eq(cuadras.id, estacionamientos.cuadraId))
+      .where(
+        and(
+          eq(estacionamientos.municipioId, municipio.id),
+          eq(estacionamientos.patente, patente),
+          or(
+            eq(estacionamientos.estado, 'activo'),
+            gte(estacionamientos.fin, inicioDelDia(ahora, municipio.zonaHoraria)),
+          ),
+        ),
+      )
+      .orderBy(desc(estacionamientos.inicio))
+      .limit(1);
+    if (!fila || fila.motivoDeCierre === 'conductor') return undefined;
+    return fila;
+  }
+
+  private async controlAnterior(municipio: Municipio, patente: Patente, ahora: Date) {
+    const [fila] = await this.conexion.db
+      .select({ creadoEn: controles.creadoEn, resultado: controles.resultado })
+      .from(controles)
+      .where(
+        and(
+          eq(controles.municipioId, municipio.id),
+          eq(controles.patente, patente),
+          gte(controles.creadoEn, new Date(ahora.getTime() - VENTANA_DE_CONTROL_ANTERIOR_MS)),
+        ),
+      )
+      .orderBy(desc(controles.creadoEn))
+      .limit(1);
+    return fila;
   }
 }

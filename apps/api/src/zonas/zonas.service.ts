@@ -33,6 +33,12 @@ import { MunicipiosService, type Municipio } from '../municipios/municipios.serv
 /** Distancia máxima entre el GPS y el eje de la calle para considerar que se está en la cuadra. */
 export const RADIO_DE_CUADRA_METROS = 25;
 
+/**
+ * Radio del agente al controlar: más amplio que el del conductor porque en una
+ * esquina el agente está a la misma distancia de varias cuadras.
+ */
+export const RADIO_DE_CONTROL_METROS = 40;
+
 /** Zona activa con su regla tarifaria completa (incluida la zona horaria del municipio). */
 export interface Zona {
   readonly id: string;
@@ -90,7 +96,7 @@ interface FilaCuadra {
   zona: { id: string; nombre: string; color: string; reglaTarifaria: unknown };
 }
 
-const punto = (ubicacion: Ubicacion) =>
+export const punto = (ubicacion: Ubicacion) =>
   sql`ST_SetSRID(ST_MakePoint(${ubicacion.lng}, ${ubicacion.lat}), 4326)`;
 
 @Injectable()
@@ -256,6 +262,30 @@ export class ZonasService {
       capacidad: cuadra.lugares[lado],
       ocupados: await this.lugaresOcupados(cuadra.id, lado),
     };
+  }
+
+  /** Cuadras tarifadas a menos de `radio` metros, la más cercana primero. */
+  async cuadrasCerca(
+    municipio: Municipio,
+    ubicacion: Ubicacion,
+    radio: number,
+  ): Promise<{ id: string; zonaId: string; distanciaMetros: number }[]> {
+    const p = punto(ubicacion);
+    const distancia = sql`ST_Distance(${cuadras.geometria}::geography, ${p}::geography)`.mapWith(
+      Number,
+    );
+    const filas = await this.conexion.db
+      .select({ id: cuadras.id, zonaId: zonas.id, distanciaMetros: distancia })
+      .from(cuadras)
+      .innerJoin(zonas, eq(zonas.id, cuadras.zonaId))
+      .where(
+        and(
+          this.cuadrasTarifadas(municipio),
+          sql`ST_DWithin(${cuadras.geometria}::geography, ${p}::geography, ${radio})`,
+        ),
+      )
+      .orderBy(distancia);
+    return filas;
   }
 
   /** Números de lugar ocupados ahora en una mano de una cuadra. */

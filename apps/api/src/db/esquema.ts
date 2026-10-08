@@ -283,6 +283,16 @@ export const estadoDeEstacionamiento = pgEnum('estado_de_estacionamiento', [
   'finalizado',
 ]);
 
+/** Por qué terminó un estacionamiento. */
+export const motivoDeCierre = pgEnum('motivo_de_cierre', [
+  /** El conductor lo finalizó antes del vencimiento. */
+  'conductor',
+  /** Se agotó el saldo: desde ese momento el vehículo está en infracción si sigue ahí. */
+  'saldo_agotado',
+  /** Llegó a la duración máxima permitida. */
+  'duracion_maxima',
+]);
+
 export const estacionamientos = pgTable(
   'estacionamientos',
   {
@@ -317,6 +327,7 @@ export const estacionamientos = pgTable(
     /** Centavos cobrados al finalizar. */
     importe: bigint({ mode: 'number' }),
     estado: estadoDeEstacionamiento().notNull().default('activo'),
+    motivoDeCierre: motivoDeCierre(),
     ...auditoria,
   },
   (tabla) => [
@@ -332,6 +343,11 @@ export const estacionamientos = pgTable(
       .on(tabla.venceEn)
       .where(sql`${tabla.estado} = 'activo'`),
     index('estacionamientos_usuario_inicio').on(tabla.usuarioId, tabla.inicio),
+    // Último estacionamiento de una patente (control) y vencidos recientes (radar del agente).
+    index('estacionamientos_patente_fin').on(tabla.municipioId, tabla.patente, tabla.fin),
+    index('estacionamientos_vencidos_recientes')
+      .on(tabla.municipioId, tabla.fin)
+      .where(sql`${tabla.motivoDeCierre} = 'saldo_agotado'`),
     // Ocupación en tiempo real por cuadra y mano.
     index('estacionamientos_activos_por_cuadra')
       .on(tabla.cuadraId, tabla.lado)
@@ -347,6 +363,10 @@ export const estacionamientos = pgTable(
     check(
       'estacionamientos_finalizado_completo',
       sql`${tabla.estado} = 'activo' OR (${tabla.fin} IS NOT NULL AND ${tabla.importe} IS NOT NULL)`,
+    ),
+    check(
+      'estacionamientos_motivo_de_cierre',
+      sql`(${tabla.estado} = 'activo') = (${tabla.motivoDeCierre} IS NULL)`,
     ),
   ],
 );
@@ -377,12 +397,18 @@ export const controles = pgTable(
     zonaId: uuid().references(() => zonas.id, { onDelete: 'restrict' }),
     cuadraId: uuid().references(() => cuadras.id, { onDelete: 'restrict' }),
     estacionamientoId: uuid().references(() => estacionamientos.id, { onDelete: 'restrict' }),
+    /** Donde estaba el agente; si eligió la cuadra a mano sin GPS, el centro de esa cuadra. */
     ubicacion: punto().notNull(),
+    /** Error del GPS en metros; nulo si la ubicación no salió del GPS. */
+    precisionMetros: integer(),
     resultado: resultadoDeControl().notNull(),
     creadoEn: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (tabla) => [
     index('controles_municipio_creado').on(tabla.municipioId, tabla.creadoEn),
-    index('controles_patente').on(tabla.patente),
+    index('controles_patente').on(tabla.municipioId, tabla.patente, tabla.creadoEn),
+    // Cobertura de la jornada: qué cuadras se controlaron y cuándo.
+    index('controles_cuadra_creado').on(tabla.cuadraId, tabla.creadoEn),
+    index('controles_agente_creado').on(tabla.agenteId, tabla.creadoEn),
   ],
 );

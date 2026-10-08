@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
+import { AgenteModule } from './agente/agente.module.js';
 import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
 import { GuardiaDeAutenticacion } from './autenticacion/guardia.js';
 import { BilleteraModule } from './billetera/billetera.module.js';
@@ -66,6 +67,7 @@ import { ZonasModule } from './zonas/zonas.module.js';
     ZonasModule,
     BilleteraModule,
     EstacionamientosModule,
+    AgenteModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: FiltroDeErrores },

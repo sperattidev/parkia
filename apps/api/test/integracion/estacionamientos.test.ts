@@ -305,8 +305,16 @@ describe('Estacionamientos y control (integración)', () => {
       expect((await pedir('GET', `${base}/estacionamientos/activo`, conductor)).json()).toBeNull();
     });
 
-    it('un vehículo sin estacionamiento figura como tal', async () => {
+    it('después del cierre automático el agente lo sigue viendo vencido', async () => {
       expect((await controlar('AB123CD')).json()).toMatchObject({
+        resultado: 'vencido',
+        habilitado: false,
+        estacionamiento: { estado: 'vencido', venceEn: ar('2026-10-05T10:45').toISOString() },
+      });
+    });
+
+    it('una patente sin estacionamientos en la jornada figura como tal', async () => {
+      expect((await controlar('AF000FF')).json()).toMatchObject({
         resultado: 'sin_estacionamiento',
         habilitado: false,
         estacionamiento: null,

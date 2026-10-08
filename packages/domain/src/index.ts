@@ -1,4 +1,18 @@
 export {
+  MINUTOS_DE_VENCIDOS_RECIENTES,
+  MINUTOS_POR_VENCER,
+  coincidencia,
+  evaluarControl,
+  inicioDelDia,
+  situacion,
+  type Coincidencia,
+  type CuadraCercana,
+  type EstacionamientoControlado,
+  type ResultadoDeControl,
+  type Situacion,
+  type SituacionDeControl,
+} from './control.js';
+export {
   alturaEnCuadra,
   direccion,
   validarAltura,

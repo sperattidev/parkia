@@ -57,6 +57,15 @@ interface Nombres {
 }
 
 /** Altura y lugar validados contra la cuadra y la mano elegidas. */
+type MotivoDeCierre = NonNullable<FilaEstacionamiento['motivoDeCierre']>;
+
+/** Un estacionamiento que llega a su vencimiento terminó por saldo o por duración máxima. */
+function motivoDeVencimiento(fila: FilaEstacionamiento): MotivoDeCierre {
+  return fila.venceEn.getTime() - fila.inicio.getTime() >= DURACION_MAXIMA_MS
+    ? 'duracion_maxima'
+    : 'saldo_agotado';
+}
+
 function ubicarEnCuadra(cuadra: CuadraTarifada, solicitud: SolicitudDeInicio) {
   const { lado, lugar } = solicitud;
   const capacidad = cuadra.lugares[lado];
@@ -179,7 +188,10 @@ export class EstacionamientosService implements OnModuleInit {
       }
       // Finalizar es idempotente: repetir la operación devuelve el mismo resultado.
       if (actual.estado === 'finalizado') return actual;
-      return this.cerrar(tx, actual, ahora < actual.venceEn ? ahora : actual.venceEn);
+      // Si ya había vencido, el tiempo cubierto terminó en el vencimiento, no ahora.
+      return ahora < actual.venceEn
+        ? this.cerrar(tx, actual, ahora, 'conductor')
+        : this.cerrar(tx, actual, actual.venceEn, motivoDeVencimiento(actual));
     });
     return this.aDto(fila, municipio, await this.nombres(fila), ahora);
   }
@@ -241,7 +253,9 @@ export class EstacionamientosService implements OnModuleInit {
           .orderBy(asc(estacionamientos.venceEn))
           .limit(LOTE_DE_CIERRE)
           .for('update', { skipLocked: true });
-        for (const vencido of vencidos) await this.cerrar(tx, vencido, vencido.venceEn);
+        for (const vencido of vencidos) {
+          await this.cerrar(tx, vencido, vencido.venceEn, motivoDeVencimiento(vencido));
+        }
         return vencidos.length;
       });
       cerrados += lote;
@@ -286,6 +300,7 @@ export class EstacionamientosService implements OnModuleInit {
     tx: Transaccion,
     estacionamiento: FilaEstacionamiento,
     fin: Date,
+    motivo: MotivoDeCierre,
   ): Promise<FilaEstacionamiento> {
     const { importe } = liquidarEstacionamiento(reglaAplicada(estacionamiento.reglaAplicada), {
       inicio: estacionamiento.inicio,
@@ -316,7 +331,7 @@ export class EstacionamientosService implements OnModuleInit {
 
     const [cerrado] = await tx
       .update(estacionamientos)
-      .set({ estado: 'finalizado', fin, importe: cobrado })
+      .set({ estado: 'finalizado', fin, importe: cobrado, motivoDeCierre: motivo })
       .where(eq(estacionamientos.id, estacionamiento.id))
       .returning();
     if (!cerrado) throw new Error('No se pudo cerrar el estacionamiento.');

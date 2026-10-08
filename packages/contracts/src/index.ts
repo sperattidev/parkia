@@ -1,4 +1,18 @@
 export {
+  controlBreveSchema,
+  jornadaSchema,
+  padronSchema,
+  radarSchema,
+  situacionSchema,
+  type AvisoDelRadar,
+  type ControlBreve,
+  type Jornada,
+  type Padron,
+  type Radar,
+  type Situacion,
+  type VehiculoDelPadron,
+} from './agente.js';
+export {
   emailSchema,
   ingresoConCodigoSchema,
   ingresoConContrasenaSchema,
@@ -27,12 +41,14 @@ export {
   type CotizacionSolicitud,
 } from './cotizaciones.js';
 export {
+  coincidenciaSchema,
   controlSchema,
   estacionamientoSchema,
   inicioDeEstacionamientoSchema,
   resultadoDeControlSchema,
   solicitudDeControlSchema,
   ubicacionDeEstacionamientoSchema,
+  type Coincidencia,
   type Control,
   type Estacionamiento,
   type ResultadoDeControl,

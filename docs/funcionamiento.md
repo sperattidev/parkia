@@ -46,18 +46,42 @@ Una misma cuenta de conductor sirve en todos los municipios que usen Parkia.
 
 ## Control en la calle
 
-El agente ingresa (o escanea) la patente. Parkia usa su ubicación GPS para saber en qué cuadra está y responde con el resultado y, si hay un estacionamiento en curso, **dónde lo declaró el conductor** (por ejemplo, _Avenida Santa Fe 751 · mano impar · lugar 7_):
+Los agentes usan la app de control (`/agente`), con el email y la contraseña que les asigna el municipio. La sesión dura una jornada.
 
-| Resultado             | ¿Habilitado? | Significado                                                |
-| --------------------- | ------------ | ---------------------------------------------------------- |
-| `habilitado`          | ✅ Sí        | Tiene un estacionamiento vigente en esta zona.             |
-| `fuera_de_horario`    | ✅ Sí        | En este momento no se cobra en la zona.                    |
-| `sin_estacionamiento` | ❌ No        | No tiene un estacionamiento en curso.                      |
-| `vencido`             | ❌ No        | Tenía un estacionamiento, pero se agotó el saldo.          |
-| `otra_zona`           | ❌ No        | Pagó en otra zona tarifada.                                |
-| `fuera_de_zona`       | —            | La ubicación del agente no está sobre una cuadra tarifada. |
+### La ronda, cuadra por cuadra
 
-**Cada verificación queda registrada** con agente, patente, ubicación, hora y resultado. Es la base para el labrado de actas (próxima versión) y para auditar la tarea de control.
+En lugar de tipear patente por patente, el agente trabaja con lo que los conductores **declararon** al estacionar:
+
+- **Padrón de la cuadra.** Al caminar, el GPS detecta la cuadra y muestra, por mano, los vehículos que pagaron (patente, altura, lugar y hasta qué hora) y los que se quedaron sin saldo. **Un vehículo estacionado que no figura en el padrón está sin pagar.** En cuadras con lugares numerados se ve la grilla: verde pagado, rojo vencido, punteado sin pago.
+- **Radar.** Lista de los vehículos que se quedaron sin saldo en las últimas 2 horas y de los que vencen en menos de 10 minutos, los más cercanos primero. Los que nadie controló desde que vencieron van adelante.
+- **Cobertura.** El mapa muestra tenues las cuadras que nadie del equipo controló hoy, para repartir la recorrida.
+- **Jornada.** Resumen del día: controles, infracciones, porcentaje en regla y últimos controles.
+
+### Resultado de un control
+
+El agente ingresa la patente (o la elige del padrón o del radar). Parkia usa su ubicación para saber en qué cuadra está y responde:
+
+| Resultado             | ¿Habilitado? | Significado                                                                            |
+| --------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| `habilitado`          | ✅ Sí        | Tiene un estacionamiento vigente en esta zona.                                         |
+| `fuera_de_horario`    | ✅ Sí        | En este momento no se cobra en la zona.                                                |
+| `sin_estacionamiento` | ❌ No        | No pagó hoy, o finalizó su estacionamiento y sigue estacionado.                        |
+| `vencido`             | ❌ No        | Se le agotó el saldo durante la jornada y no volvió a pagar (con hora de vencimiento). |
+| `otra_zona`           | ❌ No        | Pagó en otra zona tarifada.                                                            |
+| `fuera_de_zona`       | —            | La ubicación del agente no está sobre una cuadra tarifada.                             |
+
+Además informa:
+
+- **Dónde declaró el conductor** (por ejemplo, _Avenida Santa Fe 751 · mano impar · lugar 7_) y si coincide con la cuadra del agente, es una vecina u otra. La tarifa es por zona, así que estar en otra cuadra de la misma zona no es infracción, pero el agente lo ve.
+- **Si la patente ya se controló** en las últimas 3 horas, para no labrar dos actas por lo mismo.
+
+**Reglas del control:**
+
+- Un vehículo vencido **sigue figurando como vencido** aunque el sistema ya haya cerrado su estacionamiento: el agente ve desde qué hora está sin cobertura.
+- **En las esquinas** se consideran todas las cuadras a 40 metros del agente: si el vehículo pagó en la zona de una de ellas, está habilitado. Así no se marca `otra_zona` a quien estacionó en el límite entre dos zonas.
+- Si el GPS no responde, el agente puede elegir la cuadra en el mapa. El control queda registrado sin precisión de GPS, para que se sepa que la ubicación no salió del dispositivo.
+
+**Cada verificación queda registrada** con agente, patente, cuadra, ubicación, precisión del GPS, hora y resultado. Es la base para el labrado de actas (próxima versión) y para auditar la tarea de control.
 
 ## Próximas versiones
 

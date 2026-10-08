@@ -75,8 +75,21 @@ export const solicitudDeControlSchema = z
     patente: patenteSchema,
     lat: z.number().min(-90).max(90),
     lng: z.number().min(-180).max(180),
+    precisionMetros: z.number().min(0).max(100_000).optional().meta({
+      description: 'Error del GPS informado por el dispositivo; se omite si no hay GPS',
+    }),
+    cuadraId: z.uuid().optional().meta({
+      description: 'Cuadra elegida por el agente; si se omite, se detecta por GPS',
+    }),
   })
   .meta({ id: 'SolicitudDeControl' });
+
+/** Dónde declaró el conductor respecto de dónde está el agente. */
+export const coincidenciaSchema = z
+  .enum(['misma_cuadra', 'cuadra_cercana', 'otra_cuadra'])
+  .meta({ id: 'Coincidencia' });
+
+export type Coincidencia = z.infer<typeof coincidenciaSchema>;
 
 export const controlSchema = z
   .object({
@@ -98,8 +111,15 @@ export const controlSchema = z
         ubicacion: ubicacionDeEstacionamientoSchema.nullable(),
         inicio: z.iso.datetime(),
         venceEn: z.iso.datetime(),
+        estado: z.enum(['vigente', 'vencido']),
+        coincidencia: coincidenciaSchema.nullable(),
       })
-      .nullable(),
+      .nullable()
+      .meta({ description: 'En curso o, si venció en la jornada, el último' }),
+    controlAnterior: z
+      .object({ registradoEn: z.iso.datetime(), resultado: resultadoDeControlSchema })
+      .nullable()
+      .meta({ description: 'Control previo de la misma patente en las últimas horas' }),
     registradoEn: z.iso.datetime(),
   })
   .meta({ id: 'Control' });
