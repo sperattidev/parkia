@@ -9,7 +9,7 @@
     "dev": "node scripts/copiar-worker-mapa.mjs && next dev --port 3001",
     "build": "node scripts/copiar-worker-mapa.mjs && next build",
     "start": "next start --port 3001",
-    "lint": "eslint .",
+    "lint": "next typegen && eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run"
   },
