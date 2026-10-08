@@ -32,9 +32,11 @@ export {
   inicioDeEstacionamientoSchema,
   resultadoDeControlSchema,
   solicitudDeControlSchema,
+  ubicacionDeEstacionamientoSchema,
   type Control,
   type Estacionamiento,
   type ResultadoDeControl,
+  type UbicacionDeEstacionamiento,
 } from './estacionamientos.js';
 export {
   centavosSchema,
@@ -43,15 +45,22 @@ export {
   type ReglaTarifariaZonaEntrada,
 } from './tarifas.js';
 export {
+  cuadraSchema,
+  ladoSchema,
+  lineaSchema,
+  lugaresDeManoSchema,
+  mapaSchema,
   municipioSchema,
-  multiPoligonoSchema,
   slugMunicipioSchema,
+  ubicacionEnCuadraSchema,
   ubicacionSchema,
   zonaResumenSchema,
-  zonasGeoJsonSchema,
+  type Cuadra,
+  type CuadraDelMapa,
+  type LugaresDeMano,
+  type Mapa,
   type MunicipioPublico,
-  type MultiPoligono,
   type Ubicacion,
+  type UbicacionEnCuadra,
   type ZonaResumen,
-  type ZonasGeoJson,
 } from './zonas.js';

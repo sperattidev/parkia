@@ -1,3 +1,10 @@
+export {
+  alturaEnCuadra,
+  direccion,
+  validarAltura,
+  type Lado,
+  type RangoDeAlturas,
+} from './cuadras.js';
 export { ErrorDeDominio } from './errores.js';
 export { centavos, formatearPesos, pesos, sumarCentavos, type Centavos } from './dinero.js';
 export {

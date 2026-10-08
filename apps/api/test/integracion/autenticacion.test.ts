@@ -148,7 +148,7 @@ describe('Autenticación (integración)', () => {
     });
 
     it('las rutas públicas siguen accesibles sin token', async () => {
-      expect((await get('/v1/municipios/firmat/zonas')).statusCode).toBe(200);
+      expect((await get('/v1/municipios/firmat/mapa')).statusCode).toBe(200);
     });
   });
 

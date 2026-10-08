@@ -1,18 +1,48 @@
 import { z } from 'zod';
 
 import { patenteSchema } from './billetera.js';
+import { ladoSchema } from './zonas.js';
 
 const zonaBreveSchema = z.object({ id: z.uuid(), nombre: z.string() });
 
 export const inicioDeEstacionamientoSchema = z
-  .object({ zonaId: z.uuid(), patente: patenteSchema })
+  .object({
+    cuadraId: z.uuid(),
+    lado: ladoSchema,
+    altura: z
+      .int()
+      .positive()
+      .optional()
+      .meta({ description: 'Si se omite, se usa el centro de la cuadra en esa mano' }),
+    lugar: z
+      .int()
+      .positive()
+      .optional()
+      .meta({ description: 'Obligatorio en cuadras con lugares numerados' }),
+    patente: patenteSchema,
+  })
   .meta({ id: 'InicioDeEstacionamiento' });
+
+/** Dónde quedó el vehículo: lo ven el conductor y el agente. */
+export const ubicacionDeEstacionamientoSchema = z
+  .object({
+    cuadraId: z.uuid(),
+    calle: z.string(),
+    altura: z.int(),
+    lado: ladoSchema,
+    lugar: z.int().nullable(),
+    direccion: z.string().meta({ example: 'Sarmiento 750 · mano par · lugar 7' }),
+  })
+  .meta({ id: 'UbicacionDeEstacionamiento' });
+
+export type UbicacionDeEstacionamiento = z.infer<typeof ubicacionDeEstacionamientoSchema>;
 
 export const estacionamientoSchema = z
   .object({
     id: z.uuid(),
     municipio: z.string(),
     zona: zonaBreveSchema,
+    ubicacion: ubicacionDeEstacionamientoSchema.nullable(),
     patente: z.string(),
     estado: z.enum(['activo', 'finalizado']),
     inicio: z.iso.datetime(),
@@ -57,10 +87,15 @@ export const controlSchema = z
       .boolean()
       .meta({ description: 'Si el vehículo puede estar estacionado ahí ahora' }),
     zona: zonaBreveSchema.nullable(),
+    /** Cuadra en la que está el agente al controlar. */
+    cuadra: z
+      .object({ id: z.uuid(), calle: z.string(), alturaDesde: z.int(), alturaHasta: z.int() })
+      .nullable(),
     estacionamiento: z
       .object({
         id: z.uuid(),
         zona: zonaBreveSchema,
+        ubicacion: ubicacionDeEstacionamientoSchema.nullable(),
         inicio: z.iso.datetime(),
         venceEn: z.iso.datetime(),
       })

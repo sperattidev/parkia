@@ -102,3 +102,48 @@ export async function sesionDePersonal(
 
 /** Encabezado de autorización para `app.inject`. */
 export const conToken = (token: string) => ({ authorization: `Bearer ${token}` });
+
+/** Cuadra de la semilla de demostración, por calle y altura inicial. */
+export async function cuadraDeDemo(
+  conexion: Conexion,
+  calle: string,
+  alturaDesde: number,
+): Promise<{ id: string; inicio: [number, number]; fin: [number, number] }> {
+  const { rows } = await conexion.pool.query<{ id: string; geojson: string }>(
+    'select id, ST_AsGeoJSON(geometria) as geojson from cuadras where calle = $1 and altura_desde = $2',
+    [calle, alturaDesde],
+  );
+  const [fila] = rows;
+  if (!fila) throw new Error(`No existe la cuadra ${calle} ${alturaDesde} en la semilla.`);
+  const { coordinates } = JSON.parse(fila.geojson) as { coordinates: [number, number][] };
+  const inicio = coordinates[0];
+  const fin = coordinates.at(-1);
+  if (!inicio || !fin) throw new Error('Cuadra sin geometría.');
+  return { id: fila.id, inicio, fin };
+}
+
+/**
+ * Punto sobre una cuadra, como lo reportaría un GPS: a una `fraccion` del largo
+ * y desplazado `metrosALaDerecha` del eje (negativo: a la izquierda), mirando
+ * en el sentido de la numeración.
+ */
+export function puntoEnCuadra(
+  cuadra: { inicio: [number, number]; fin: [number, number] },
+  fraccion: number,
+  metrosALaDerecha: number,
+): { lat: number; lng: number } {
+  const [x0, y0] = cuadra.inicio;
+  const [x1, y1] = cuadra.fin;
+  const metrosPorGradoLat = 111_320;
+  const metrosPorGradoLng = 111_320 * Math.cos((y0 * Math.PI) / 180);
+  const dx = (x1 - x0) * metrosPorGradoLng;
+  const dy = (y1 - y0) * metrosPorGradoLat;
+  const largo = Math.hypot(dx, dy);
+  // Normal hacia la derecha del sentido (dx, dy): (dy, -dx).
+  const nx = (dy / largo) * metrosALaDerecha;
+  const ny = (-dx / largo) * metrosALaDerecha;
+  return {
+    lng: x0 + (x1 - x0) * fraccion + nx / metrosPorGradoLng,
+    lat: y0 + (y1 - y0) * fraccion + ny / metrosPorGradoLat,
+  };
+}

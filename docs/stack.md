@@ -50,7 +50,7 @@
 
 - **NestJS** (adaptador Fastify). Da estructura modular, inyección de dependencias, guards por rol y por municipio, y OpenAPI automático. Vos solo, en dos años, vas a agradecer el orden.
 - **PostgreSQL 17 + PostGIS 3.5**:
-  - PostGIS para las zonas como polígonos ("¿esta coordenada está en zona 1?") y los reportes geográficos.
+  - PostGIS para las cuadras como ejes de calle ("¿sobre qué cuadra y mano está esta coordenada?", altura interpolada) y los reportes geográficos.
   - **Row Level Security** por `municipio_id`: el aislamiento entre ciudades lo garantiza la base, no solo el código.
 - **Drizzle ORM**: SQL explícito, buen soporte de PostGIS y RLS, y migraciones versionadas.
 - **pg-boss** para colas y tareas programadas (vencimientos, avisos "te quedan 10 minutos", conciliación). Usa Postgres: no hace falta Redis en el MVP.
@@ -164,8 +164,9 @@ Todo en Docker: si un municipio exige servidores propios o hosting específico, 
 
 ```
 Municipio (tenant)
- ├─ Zona (polígono PostGIS, nombre, color)
- │   └─ ReglaTarifaria (franjas horarias, días, precio por fracción, progresividad, tope)
+ ├─ Zona (nombre, color)
+ │   ├─ ReglaTarifaria (franjas horarias, días, precio por fracción, progresividad, tope)
+ │   └─ Cuadra (eje LineString PostGIS, calle, alturas, capacidad por mano, lugares numerados)
  ├─ Feriado / Evento especial
  ├─ Exencion (discapacidad, frentista, oficial) → vinculada a Patente
  ├─ Agente
@@ -174,7 +175,7 @@ Municipio (tenant)
 
 Conductor ─< Vehiculo (patente)
 Conductor ── Billetera ─< MovimientoLedger
-SesionEstacionamiento (patente, zona, inicio, fin, monto, origen: app/comercio/agente)
+SesionEstacionamiento (patente, zona, cuadra, mano, altura, lugar?, inicio, fin, monto, origen: app/comercio/agente)
 Control (agente, patente, ubicación, resultado) ─? Acta (foto, hash, estado → Juzgado de Faltas)
 Pago (proveedor, id externo, estado, webhook) → MovimientoLedger
 AuditLog (append-only: quién, qué, cuándo, antes/después)

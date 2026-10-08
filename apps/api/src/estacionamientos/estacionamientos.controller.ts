@@ -32,16 +32,20 @@ export class EstacionamientosController {
   @ApiResponse({ status: 201, standardSchema: estacionamientoSchema })
   @ApiResponse({
     status: 409,
-    description: 'ESTACIONAMIENTO_EN_CURSO o PATENTE_YA_ESTACIONADA',
+    description: 'ESTACIONAMIENTO_EN_CURSO, PATENTE_YA_ESTACIONADA o LUGAR_OCUPADO',
   })
-  @ApiResponse({ status: 422, description: 'SALDO_INSUFICIENTE o VEHICULO_NO_REGISTRADO' })
+  @ApiResponse({
+    status: 422,
+    description:
+      'SALDO_INSUFICIENTE, VEHICULO_NO_REGISTRADO, MANO_SIN_ESTACIONAMIENTO, ALTURA_FUERA_DE_CUADRA, LUGAR_REQUERIDO…',
+  })
   iniciar(
     @Param('municipio', municipioParam) municipio: string,
     @Body({ schema: inicioDeEstacionamientoSchema })
-    { zonaId, patente }: z.infer<typeof inicioDeEstacionamientoSchema>,
+    solicitud: z.infer<typeof inicioDeEstacionamientoSchema>,
     @UsuarioActual() usuario: UsuarioAutenticado,
   ): Promise<Estacionamiento> {
-    return this.estacionamientos.iniciar(usuario.id, municipio, zonaId, patente);
+    return this.estacionamientos.iniciar(usuario.id, municipio, solicitud);
   }
 
   @Get('activo')

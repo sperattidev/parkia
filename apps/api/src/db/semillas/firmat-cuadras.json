@@ -1,0 +1,392 @@
+[
+  {
+    "zona": "microcentro",
+    "calle": "Avenida Santa Fe",
+    "alturaDesde": 600,
+    "alturaHasta": 699,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.489358, -33.458451],
+      [-61.488127, -33.458525]
+    ],
+    "lugaresNumerados": true
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Avenida Santa Fe",
+    "alturaDesde": 700,
+    "alturaHasta": 799,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.488127, -33.458525],
+      [-61.486892, -33.458587]
+    ],
+    "lugaresNumerados": true
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Avenida Santa Fe",
+    "alturaDesde": 800,
+    "alturaHasta": 899,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.486892, -33.458587],
+      [-61.485656, -33.458643]
+    ],
+    "lugaresNumerados": true
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Buenos Aires",
+    "alturaDesde": 900,
+    "alturaHasta": 999,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.487137, -33.461725],
+      [-61.487056, -33.46069]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Buenos Aires",
+    "alturaDesde": 1000,
+    "alturaHasta": 1099,
+    "lugaresPar": 19,
+    "lugaresImpar": 19,
+    "coordenadas": [
+      [-61.487056, -33.46069],
+      [-61.486974, -33.459639]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Buenos Aires",
+    "alturaDesde": 1100,
+    "alturaHasta": 1199,
+    "lugaresPar": 19,
+    "lugaresImpar": 19,
+    "coordenadas": [
+      [-61.486974, -33.459639],
+      [-61.486892, -33.458587]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Bulevar Colón",
+    "alturaDesde": 900,
+    "alturaHasta": 999,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.485904, -33.461799],
+      [-61.485822, -33.460755]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Bulevar Colón",
+    "alturaDesde": 1000,
+    "alturaHasta": 1099,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.485822, -33.460755],
+      [-61.485754, -33.459737]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Bulevar Colón",
+    "alturaDesde": 1100,
+    "alturaHasta": 1199,
+    "lugaresPar": 20,
+    "lugaresImpar": 20,
+    "coordenadas": [
+      [-61.485754, -33.459737],
+      [-61.485656, -33.458643]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Córdoba",
+    "alturaDesde": 900,
+    "alturaHasta": 999,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.488376, -33.461644],
+      [-61.488294, -33.460619]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Córdoba",
+    "alturaDesde": 1000,
+    "alturaHasta": 1099,
+    "lugaresPar": 19,
+    "lugaresImpar": 19,
+    "coordenadas": [
+      [-61.488294, -33.460619],
+      [-61.48821, -33.45957]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Córdoba",
+    "alturaDesde": 1100,
+    "alturaHasta": 1199,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.48821, -33.45957],
+      [-61.488127, -33.458525]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Entre Ríos",
+    "alturaDesde": 900,
+    "alturaHasta": 999,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.489604, -33.461565],
+      [-61.489526, -33.460548]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Entre Ríos",
+    "alturaDesde": 1000,
+    "alturaHasta": 1099,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.489526, -33.460548],
+      [-61.489442, -33.459501]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Entre Ríos",
+    "alturaDesde": 1100,
+    "alturaHasta": 1199,
+    "lugaresPar": 19,
+    "lugaresImpar": 19,
+    "coordenadas": [
+      [-61.489442, -33.459501],
+      [-61.489358, -33.458451]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Independencia",
+    "alturaDesde": 600,
+    "alturaHasta": 699,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.489526, -33.460548],
+      [-61.488294, -33.460619]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Independencia",
+    "alturaDesde": 700,
+    "alturaHasta": 799,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.488294, -33.460619],
+      [-61.487056, -33.46069]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Independencia",
+    "alturaDesde": 800,
+    "alturaHasta": 899,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.487056, -33.46069],
+      [-61.485822, -33.460755]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Libertad",
+    "alturaDesde": 600,
+    "alturaHasta": 699,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.489604, -33.461565],
+      [-61.488376, -33.461644]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Libertad",
+    "alturaDesde": 700,
+    "alturaHasta": 799,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.488376, -33.461644],
+      [-61.487137, -33.461725]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Libertad",
+    "alturaDesde": 800,
+    "alturaHasta": 899,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.487137, -33.461725],
+      [-61.485904, -33.461799]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Sarmiento",
+    "alturaDesde": 600,
+    "alturaHasta": 699,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.489442, -33.459501],
+      [-61.48821, -33.45957]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Sarmiento",
+    "alturaDesde": 700,
+    "alturaHasta": 799,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.48821, -33.45957],
+      [-61.486974, -33.459639]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "microcentro",
+    "calle": "Sarmiento",
+    "alturaDesde": 800,
+    "alturaHasta": 899,
+    "lugaresPar": 18,
+    "lugaresImpar": 18,
+    "coordenadas": [
+      [-61.486974, -33.459639],
+      [-61.485754, -33.459737]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "quemada",
+    "calle": "Carlos Casado",
+    "alturaDesde": 900,
+    "alturaHasta": 999,
+    "lugaresPar": 7,
+    "lugaresImpar": 7,
+    "coordenadas": [
+      [-61.491696, -33.461429],
+      [-61.491656, -33.460963]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "quemada",
+    "calle": "Carlos Casado",
+    "alturaDesde": 1000,
+    "alturaHasta": 1099,
+    "lugaresPar": 8,
+    "lugaresImpar": 8,
+    "coordenadas": [
+      [-61.491656, -33.460963],
+      [-61.491611, -33.460429]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "quemada",
+    "calle": "Independencia",
+    "alturaDesde": 500,
+    "alturaHasta": 599,
+    "lugaresPar": 11,
+    "lugaresImpar": 11,
+    "coordenadas": [
+      [-61.491611, -33.460429],
+      [-61.490783, -33.460476]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "quemada",
+    "calle": "La Quemada",
+    "alturaDesde": 400,
+    "alturaHasta": 499,
+    "lugaresPar": 13,
+    "lugaresImpar": 13,
+    "coordenadas": [
+      [-61.492425, -33.461382],
+      [-61.491656, -33.460963]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "quemada",
+    "calle": "La Quemada",
+    "alturaDesde": 500,
+    "alturaHasta": 599,
+    "lugaresPar": 15,
+    "lugaresImpar": 15,
+    "coordenadas": [
+      [-61.491656, -33.460963],
+      [-61.490783, -33.460476]
+    ],
+    "lugaresNumerados": false
+  },
+  {
+    "zona": "quemada",
+    "calle": "Libertad",
+    "alturaDesde": 400,
+    "alturaHasta": 499,
+    "lugaresPar": 10,
+    "lugaresImpar": 10,
+    "coordenadas": [
+      [-61.492425, -33.461382],
+      [-61.491696, -33.461429]
+    ],
+    "lugaresNumerados": false
+  }
+]

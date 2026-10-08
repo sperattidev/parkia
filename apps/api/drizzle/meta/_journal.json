@@ -43,6 +43,13 @@
       "when": 1791403138924,
       "tag": "0005_estacionamientos_y_controles",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791429168193,
+      "tag": "0006_cuadras",
+      "breakpoints": true
     }
   ]
 }

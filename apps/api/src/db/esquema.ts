@@ -20,8 +20,8 @@ import {
  * Columna PostGIS. Se escribe y se lee siempre a través de funciones SQL
  * (`ST_GeomFromGeoJSON`, `ST_AsGeoJSON`), por eso el tipo en TypeScript es opaco.
  */
-const multiPoligono = customType<{ data: string; driverData: string }>({
-  dataType: () => 'geometry(MultiPolygon, 4326)',
+const linea = customType<{ data: string; driverData: string }>({
+  dataType: () => 'geometry(LineString, 4326)',
 });
 
 const auditoria = {
@@ -55,15 +55,60 @@ export const zonas = pgTable(
       .references(() => municipios.id, { onDelete: 'restrict' }),
     nombre: text().notNull(),
     color: text().notNull(),
-    area: multiPoligono().notNull(),
     /** Validada con `reglaTarifariaZonaSchema` antes de guardarse. */
     reglaTarifaria: jsonb().$type<ReglaTarifariaZonaEntrada>().notNull(),
     activa: boolean().notNull().default(true),
     ...auditoria,
   },
+  (tabla) => [uniqueIndex('zonas_municipio_nombre_unico').on(tabla.municipioId, tabla.nombre)],
+);
+
+/** Mano de la cuadra según la numeración: los números pares van de un lado, los impares del otro. */
+export const ladoDeCuadra = pgEnum('lado_de_cuadra', ['par', 'impar']);
+
+/**
+ * Tramo de calle entre dos esquinas. Una zona tarifada es un conjunto de
+ * cuadras (las que rodean sus manzanas), tal como las enumera la ordenanza.
+ */
+export const cuadras = pgTable(
+  'cuadras',
+  {
+    id: uuid()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    municipioId: uuid()
+      .notNull()
+      .references(() => municipios.id, { onDelete: 'restrict' }),
+    /** Sin zona: la cuadra existe pero no está tarifada. */
+    zonaId: uuid().references(() => zonas.id, { onDelete: 'restrict' }),
+    calle: text().notNull(),
+    alturaDesde: integer().notNull(),
+    alturaHasta: integer().notNull(),
+    /** Eje de la calle, orientado en el sentido creciente de la numeración. */
+    geometria: linea().notNull(),
+    /** Mano de los números pares mirando en el sentido de la numeración. */
+    paresALaDerecha: boolean().notNull().default(true),
+    /** Capacidad estimada por mano (0: no se estaciona de ese lado). */
+    lugaresPar: integer().notNull(),
+    lugaresImpar: integer().notNull(),
+    /** Si la cuadra tiene los lugares numerados en la calle, el conductor elige el suyo. */
+    lugaresNumerados: boolean().notNull().default(false),
+    activa: boolean().notNull().default(true),
+    ...auditoria,
+  },
   (tabla) => [
-    uniqueIndex('zonas_municipio_nombre_unico').on(tabla.municipioId, tabla.nombre),
-    index('zonas_area_gist').using('gist', tabla.area),
+    uniqueIndex('cuadras_municipio_calle_altura_unica').on(
+      tabla.municipioId,
+      tabla.calle,
+      tabla.alturaDesde,
+    ),
+    index('cuadras_geometria_gist').using('gist', tabla.geometria),
+    index('cuadras_zona').on(tabla.zonaId),
+    check('cuadras_alturas_validas', sql`${tabla.alturaHasta} > ${tabla.alturaDesde}`),
+    check(
+      'cuadras_lugares_no_negativos',
+      sql`${tabla.lugaresPar} >= 0 AND ${tabla.lugaresImpar} >= 0`,
+    ),
   ],
 );
 
@@ -254,6 +299,12 @@ export const estacionamientos = pgTable(
       .notNull()
       .references(() => usuarios.id, { onDelete: 'restrict' }),
     patente: text().notNull(),
+    /** Dónde declaró estacionar el conductor (nulo en estacionamientos anteriores a las cuadras). */
+    cuadraId: uuid().references(() => cuadras.id, { onDelete: 'restrict' }),
+    lado: ladoDeCuadra(),
+    altura: integer(),
+    /** Número de lugar, solo en cuadras con lugares numerados. */
+    lugar: integer(),
     /**
      * Copia de la regla vigente al iniciar (con zona horaria): si el municipio
      * cambia la tarifa durante la estadía, se cobra lo que regía al empezar.
@@ -281,6 +332,18 @@ export const estacionamientos = pgTable(
       .on(tabla.venceEn)
       .where(sql`${tabla.estado} = 'activo'`),
     index('estacionamientos_usuario_inicio').on(tabla.usuarioId, tabla.inicio),
+    // Ocupación en tiempo real por cuadra y mano.
+    index('estacionamientos_activos_por_cuadra')
+      .on(tabla.cuadraId, tabla.lado)
+      .where(sql`${tabla.estado} = 'activo'`),
+    // Un lugar numerado no puede estar ocupado por dos vehículos a la vez.
+    uniqueIndex('estacionamientos_lugar_activo_unico')
+      .on(tabla.cuadraId, tabla.lado, tabla.lugar)
+      .where(sql`${tabla.estado} = 'activo' AND ${tabla.lugar} IS NOT NULL`),
+    check(
+      'estacionamientos_ubicacion_completa',
+      sql`${tabla.cuadraId} IS NULL OR (${tabla.lado} IS NOT NULL AND ${tabla.altura} IS NOT NULL)`,
+    ),
     check(
       'estacionamientos_finalizado_completo',
       sql`${tabla.estado} = 'activo' OR (${tabla.fin} IS NOT NULL AND ${tabla.importe} IS NOT NULL)`,
@@ -312,6 +375,7 @@ export const controles = pgTable(
       .references(() => usuarios.id, { onDelete: 'restrict' }),
     patente: text().notNull(),
     zonaId: uuid().references(() => zonas.id, { onDelete: 'restrict' }),
+    cuadraId: uuid().references(() => cuadras.id, { onDelete: 'restrict' }),
     estacionamientoId: uuid().references(() => estacionamientos.id, { onDelete: 'restrict' }),
     ubicacion: punto().notNull(),
     resultado: resultadoDeControl().notNull(),
